@@ -32,6 +32,7 @@
       <p>
         Everyone has submitted their songs! Waiting for the game to start...
       </p>
+      <button v-if="isDj">Start Game</button>
     </div>
   </div>
 </template>
@@ -40,7 +41,12 @@
 import { ref, computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { useSessionStore } from "@/stores/session";
-import { getDatabase, ref as dbRef, onValue } from "firebase/database";
+import {
+  getDatabase,
+  ref as dbRef,
+  onValue,
+  DataSnapshot,
+} from "firebase/database";
 import { updatePlayerSong } from "@/services/songService";
 
 // Room and Current Game
@@ -55,11 +61,13 @@ const playerId = sessionStore.playerId as string; // Player ID z store
 const songId = ref<string>("");
 const songTitle = ref<string>("");
 const isSubmitted = ref<boolean>(false);
+const djId = ref<string>("");
 
 const allPlayersSubmitted = ref<boolean>(false);
 
 // Computed, aby włączyć/wyłączyć przycisk Submit
 const canSubmit = computed(() => songId.value.trim() && songTitle.value.trim());
+const isDj = computed(() => sessionStore.playerId === djId.value);
 
 // Nasłuchiwanie aktualnego `currentGame`
 const listenToCurrentGame = () => {
@@ -73,6 +81,20 @@ const listenToCurrentGame = () => {
       checkAllPlayersSubmitted(); // Sprawdź, czy wszyscy gracze już przesłali piosenkę
     } else {
       console.error("No current game found for this room.");
+    }
+  });
+};
+
+const listenToRoom = () => {
+  const roomRef = dbRef(getDatabase(), `rooms/${roomId}`);
+  onValue(roomRef, (snapshot: DataSnapshot) => {
+    const roomData = snapshot.val() as {
+      djId?: string;
+      status?: string;
+    };
+
+    if (roomData) {
+      djId.value = roomData.djId || "";
     }
   });
 };
@@ -149,6 +171,7 @@ onMounted(() => {
     console.error("Missing roomId or playerId in session.");
   } else {
     listenToCurrentGame(); // Rozpocznij nasłuchiwanie aktualnej gry
+    listenToRoom();
   }
 });
 </script>
