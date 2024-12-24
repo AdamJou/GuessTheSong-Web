@@ -1,62 +1,159 @@
 <template>
   <div class="play-song-view">
-    <h1>Play Song View (DJ)</h1>
+    <h1>Play Song</h1>
 
-    <!-- Display song details -->
+    <!-- Display current song -->
     <div v-if="currentSong">
       <h2>Current Song</h2>
       <p><strong>Song ID:</strong> {{ currentSong.songId }}</p>
       <p><strong>Song Title:</strong> {{ currentSong.songTitle }}</p>
     </div>
 
-    <!-- Message while waiting for song data -->
-    <p v-else>Waiting for the song to load...</p>
+    <!-- Display "Votes So Far" -->
+    <div v-if="Object.keys(votes).length > 0">
+      <h2>Votes So Far</h2>
+      <ul>
+        <li v-for="(votedFor, voter) in votes" :key="voter">
+          {{ getPlayerName(voter) }} voted for {{ getPlayerName(votedFor) }}
+        </li>
+      </ul>
+    </div>
+
+    <!-- Display button if all players have voted -->
+    <div v-if="allPlayersHaveVoted">
+      <button @click="goBackToSongSelection">Go Back to Song Selection</button>
+    </div>
   </div>
 </template>
-
 <script setup lang="ts">
-import { computed, watch, ref } from "vue";
+import { ref, computed, watch } from "vue";
+import { getDatabase, ref as dbRef, onValue, update } from "firebase/database";
 import { useSessionStore } from "@/stores/session";
-import { getDatabase, ref as dbRef, onValue } from "firebase/database";
+import { useVotes } from "@/composables/useVotes";
+import { useRouter } from "vue-router";
 
-// Access sessionStore
+// Session Store and Router
 const sessionStore = useSessionStore();
+const router = useRouter();
 
-// Reactive references
+// Reactive Data
+const roomId = computed(() => sessionStore.roomId);
 const currentGame = computed(() => sessionStore.currentGame);
 const currentRound = computed(() => sessionStore.currentRound);
-const roomId = computed(() => sessionStore.roomId);
-
-// Reactive data for the current song
+const players = computed(() => sessionStore.players);
+const playerId = computed(() => sessionStore.playerId);
 const currentSong = ref<{ songId: string; songTitle: string } | null>(null);
 
-// Firebase subscription to track the song in the current round
+// Use the reusable useVotes composable
+const { votes, getPlayerName } = useVotes();
+
+// Check if all players have voted
+const allPlayersHaveVoted = computed(() => {
+  const totalPlayers = Object.keys(players.value || {}).filter(
+    (id) => id !== sessionStore.djId // Exclude the DJ's ID
+  );
+  return totalPlayers.every((id) => votes.value[id]); // Check if all remaining players have voted
+});
+
+// Firebase Subscription for Current Song
+let songUnsubscribe: (() => void) | null = null;
+
+const subscribeToSong = () => {
+  if (!roomId.value || !currentGame.value || !currentRound.value) return;
+
+  const db = getDatabase();
+  const songRef = dbRef(
+    db,
+    `rooms/${roomId.value}/games/${currentGame.value}/rounds/${currentRound.value}/song`
+  );
+
+  songUnsubscribe = onValue(songRef, (snapshot) => {
+    currentSong.value = snapshot.exists() ? snapshot.val() : null;
+  });
+};
+
+const unsubscribeFromSong = () => {
+  if (songUnsubscribe) {
+    songUnsubscribe();
+    songUnsubscribe = null;
+  }
+};
+
+// Watchers for Game and Round
 watch(
   [currentGame, currentRound],
-  ([newGame, newRound]) => {
-    if (!roomId.value || !newGame || !newRound) {
-      console.warn("Missing required data for subscribing to current song.");
-      currentSong.value = null;
-      return;
-    }
-
-    const db = getDatabase();
-    const songRef = dbRef(
-      db,
-      `rooms/${roomId.value}/games/${newGame}/rounds/${newRound}/song`
-    );
-
-    // Subscribe to song changes
-    onValue(songRef, (snapshot) => {
-      if (snapshot.exists()) {
-        currentSong.value = snapshot.val();
-      } else {
-        currentSong.value = null;
-      }
-    });
+  () => {
+    unsubscribeFromSong();
+    subscribeToSong();
   },
   { immediate: true }
 );
+
+// Go back to song selection
+const goBackToSongSelection = async () => {
+  try {
+    const db = getDatabase();
+
+    // Define paths
+    const currentRoundPath = `rooms/${roomId.value}/games/${currentGame.value}/rounds/${currentRound.value}`;
+    const gamePath = `rooms/${roomId.value}/games/${currentGame.value}`;
+    const roomPath = `rooms/${roomId.value}`; // Root path for the room
+
+    // Mark the current round as completed
+    await update(dbRef(db, currentRoundPath), {
+      status: "completed",
+    });
+
+    // Generate next round ID
+    const nextRoundNumber =
+      parseInt(currentRound.value!.replace("round", "")) + 1;
+    const nextRoundId = `round${nextRoundNumber}`;
+
+    // Initialize votes for all players except the DJ
+    const votes = Object.keys(players.value || {}).reduce((acc, playerId) => {
+      if (playerId !== sessionStore.djId) {
+        acc[playerId] = ""; // No vote yet
+      }
+      return acc;
+    }, {} as Record<string, string>);
+
+    // Create a new round object
+    const newRound = {
+      id: nextRoundId,
+      song: {
+        songId: "", // Placeholder
+        songTitle: "", // Placeholder
+        suggestedBy: "",
+        wasPlayed: false,
+      },
+      votes: votes, // Include initialized votes
+      status: "song_selection",
+    };
+
+    // Add the new round to the game
+    await update(dbRef(db, gamePath), {
+      [`rounds/${nextRoundId}`]: newRound,
+    });
+
+    // Update the `currentRound` at both the room and game levels
+    await update(dbRef(db, roomPath), {
+      currentRound: nextRoundId, // Update root-level currentRound
+    });
+
+    await update(dbRef(db, gamePath), {
+      currentRound: nextRoundId, // Update game-level currentRound
+    });
+
+    // Navigate back to the DJ Panel
+    router.push({ name: "DjPanel", params: { roomId: roomId.value } });
+  } catch (error) {
+    console.error(
+      "Error updating round status and creating the next round:",
+      error
+    );
+    alert("Failed to go back to song selection. Please try again.");
+  }
+};
 </script>
 
 <style scoped>

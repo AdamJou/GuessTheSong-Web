@@ -51,10 +51,10 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { getDatabase, ref as dbRef, onValue, off } from "firebase/database";
+import { getDatabase, ref as dbRef, onValue, update } from "firebase/database";
 import { useSessionStore } from "@/stores/session";
-import { Players } from "@/types/types";
-import { update } from "firebase/database";
+import { useVotes } from "@/composables/useVotes";
+
 // Session Store
 const sessionStore = useSessionStore();
 
@@ -62,19 +62,14 @@ const sessionStore = useSessionStore();
 const roomId = computed(() => sessionStore.roomId);
 const currentGame = computed(() => sessionStore.currentGame);
 const currentRound = computed(() => sessionStore.currentRound);
-const players = computed<Players>(() => sessionStore.players);
+const players = computed(() => sessionStore.players);
 const playerId = computed(() => sessionStore.playerId);
 const currentSong = ref<{ songId: string; songTitle: string } | null>(null);
 
 const selectedPlayer = ref<string | null>(null);
-const hasVoted = ref(false);
-const votedPlayer = ref<string | null>(null);
-const votes = ref<Record<string, string>>({});
 
-// Helper function to get player names
-const getPlayerName = (id: string): string => {
-  return players.value?.[id]?.name || "Unknown";
-};
+// Use the reusable useVotes composable
+const { votes, hasVoted, votedPlayer, getPlayerName, resetVotes } = useVotes();
 
 // Other players excluding the current player
 const otherPlayers = computed(() =>
@@ -86,9 +81,8 @@ const otherPlayers = computed(() =>
   }, {} as Record<string, { name: string }>)
 );
 
-// Firebase Subscription Management
+// Firebase Subscription Management for Song
 let songUnsubscribe: (() => void) | null = null;
-let votesUnsubscribe: (() => void) | null = null;
 
 const subscribeToSong = () => {
   if (!roomId.value || !currentGame.value || !currentRound.value) return;
@@ -104,39 +98,21 @@ const subscribeToSong = () => {
   });
 };
 
-const subscribeToVotes = () => {
-  if (!roomId.value || !currentGame.value || !currentRound.value) return;
-
-  const db = getDatabase();
-  const votesRef = dbRef(
-    db,
-    `rooms/${roomId.value}/games/${currentGame.value}/rounds/${currentRound.value}/votes`
-  );
-
-  votesUnsubscribe = onValue(votesRef, (snapshot) => {
-    const voteData = snapshot.val() || {};
-    votes.value = voteData;
-
-    if (playerId.value && voteData[playerId.value]) {
-      hasVoted.value = true;
-      votedPlayer.value =
-        players.value?.[voteData[playerId.value]]?.name || "Unknown";
-    }
-  });
+const unsubscribeFromSong = () => {
+  if (songUnsubscribe) {
+    songUnsubscribe();
+    songUnsubscribe = null;
+  }
 };
 
-const unsubscribeFromFirebase = () => {
-  if (songUnsubscribe) songUnsubscribe();
-  if (votesUnsubscribe) votesUnsubscribe();
-};
-
-// Watchers for Game and Round
+// Reset state when the round changes
 watch(
-  [currentGame, currentRound],
+  currentRound,
   () => {
-    unsubscribeFromFirebase();
+    unsubscribeFromSong();
     subscribeToSong();
-    subscribeToVotes();
+    resetVotes(); // Reset voting state when the round changes
+    selectedPlayer.value = null; // Clear the selected player
   },
   { immediate: true }
 );
@@ -169,9 +145,61 @@ const submitVote = async () => {
     [playerId.value]: selectedPlayer.value,
   });
 
-  hasVoted.value = true;
-  votedPlayer.value = players.value?.[selectedPlayer.value]?.name || "Unknown";
-
   alert("Vote submitted successfully!");
 };
 </script>
+
+<style scoped>
+.voting-view {
+  text-align: center;
+  margin-top: 50px;
+}
+
+h1 {
+  font-size: 2rem;
+  margin-bottom: 20px;
+}
+
+p {
+  font-size: 1.2rem;
+}
+
+h2 {
+  margin-top: 20px;
+  font-size: 1.5rem;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+li {
+  margin: 10px 0;
+  cursor: pointer;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+li.selected {
+  background-color: #007bff;
+  color: white;
+}
+
+button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  border: none;
+  background-color: #007bff;
+  color: white;
+  border-radius: 5px;
+}
+
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+</style>
