@@ -5,7 +5,7 @@ import { navigationGuard } from "./navigationGuards";
 import NicknameInput from "@/components/NicknameInput.vue";
 import HomeView from "@/views/HomeView.vue";
 import Lobby from "@/views/Lobby.vue";
-
+import SongSelection from "@/views/SongSelection.vue";
 const routes: Array<RouteRecordRaw> = [
   {
     path: "/",
@@ -22,7 +22,11 @@ const routes: Array<RouteRecordRaw> = [
     name: "Lobby",
     component: Lobby,
   },
-
+  {
+    path: "/song-selection/:roomId", // Dodajemy trasę dla SongSelection
+    name: "SongSelection",
+    component: SongSelection,
+  },
   {
     path: "/:catchAll(.*)",
     redirect: "/",

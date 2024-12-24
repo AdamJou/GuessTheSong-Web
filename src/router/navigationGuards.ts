@@ -31,8 +31,17 @@ export const handleRoomNavigation = async (
           }
         }
       } else if (room.status === "song_selection") {
-        console.log("Przekierowanie na SongSelection.");
-        return next({ name: "SongSelection", params: { roomId } });
+        if (!room.games || !room.currentGame || !room.players[playerId]) {
+          console.error(
+            "Invalid state: Missing game or player does not exist in room."
+          );
+          return next({ name: "HomeView" });
+        }
+
+        if (to.name !== "SongSelection") {
+          console.log("Przekierowanie na SongSelection.");
+          return next({ name: "SongSelection", params: { roomId } });
+        }
       }
     } else {
       console.log("Pokój nie istnieje. Przekierowanie na HomeView.");
