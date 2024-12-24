@@ -21,6 +21,7 @@ export interface Round {
 export interface Game {
   id: string; // Unikalne ID gry
   djId: string; // DJ odpowiedzialny za grę
+  playerSongs: Record<string, string>; // Wybrane piosenki przez graczy (klucz - playerId, wartość - songId)
   rounds: Record<string, Round>; // Rundy w ramach gry
 }
 

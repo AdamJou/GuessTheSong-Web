@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { startGame, joinGame } from "@/services/gameService"; // Dodano import joinGame
+import { createGameAndRound, joinGame } from "@/services/gameService"; // Zmieniono import
 import { useSessionStore } from "@/stores/session";
 import { getDatabase, ref as dbRef, onValue } from "firebase/database";
 
@@ -55,8 +55,13 @@ const ensurePlayerInRoom = async () => {
 
 // Obsługa rozpoczęcia gry przez DJ-a
 const handleStartGame = async () => {
-  await startGame(roomId);
-  router.push(`/song-selection/${roomId}`);
+  try {
+    await createGameAndRound(roomId); // Tworzenie gry i pierwszej rundy
+    router.push(`/song-selection/${roomId}`); // Przekierowanie do wyboru piosenek
+  } catch (error) {
+    console.error("Error starting the game:", error);
+    alert("An error occurred while starting the game. Please try again.");
+  }
 };
 
 // Komputowane właściwości
