@@ -4,13 +4,27 @@ export interface Player {
   score: number; // Wynik gracza
   ready: boolean; // Status gotowości
 }
+export type Players = Record<
+  string,
+  { name: string; score: number; ready: boolean }
+>;
 
 export interface Song {
   songId: string; // Unikalne ID utworu
   songTitle: string; // Tytuł utworu
   suggestedBy: string; // ID gracza, który zaproponował utwór
+  wasPlayed: boolean;
+}
+export interface Song {
+  songId: string; // Unikalne ID utworu
+  songTitle: string; // Tytuł utworu
+  suggestedBy: string; // ID gracza, który zaproponował utwór
+  wasPlayed: boolean; // Czy utwór został już odtworzony
 }
 
+// Typy pochodne
+export type PlayerSong = Omit<Song, "suggestedBy">; // Bez "suggestedBy"
+export type RoundSong = Omit<Song, "wasPlayed">; // Bez "wasPlayed"
 export interface Round {
   id: string; // Unikalne ID rundy
   song: Song; // Informacje o utworze

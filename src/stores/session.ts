@@ -143,20 +143,11 @@ export const useSessionStore = defineStore("session", {
       this.unsubscribeCurrentRound();
 
       const db = getDatabase();
-      const roundRef = dbRef(
-        db,
-        `rooms/${this.roomId}/games/${this.currentGame}/currentRound`
-      );
+      const roundRef = dbRef(db, `rooms/${this.roomId}/currentRound`);
 
       const callback = onValue(roundRef, (snapshot) => {
         this.currentRound = snapshot.exists() ? snapshot.val() : null;
-
-        // Jeśli mamy aktualną rundę, nasłuchujemy jej statusu.
-        if (this.currentRound) {
-          this.subscribeToRoundStatus();
-        } else {
-          this.unsubscribeRoundStatus();
-        }
+        console.log("Updated currentRound:", this.currentRound); // Debugging log
       });
 
       this._roundSubUnsub = callback;

@@ -13,7 +13,8 @@ export const updatePlayerSong = async (
   gameId: string,
   playerId: string,
   songId: string,
-  songTitle: string
+  songTitle: string,
+  wasPlayed: boolean = false
 ): Promise<void> => {
   try {
     const database = getDatabase();
@@ -28,6 +29,7 @@ export const updatePlayerSong = async (
     const songData = {
       songId,
       songTitle,
+      wasPlayed,
     };
 
     // Aktualizacja Firebase

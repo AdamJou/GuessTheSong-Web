@@ -85,22 +85,31 @@ export const createGameAndRound = async (roomId: string): Promise<void> => {
   const sessionStore = useSessionStore();
   const roomRef = dbRef(database, `rooms/${roomId}`);
 
-  // Pobierz dane pokoju
+  // Fetch the room data
   const snapshot = await get(roomRef);
   if (!snapshot.exists()) {
     throw new Error("Room not found.");
   }
   const roomData: Room = snapshot.val();
 
-  // Tworzenie nowej gry
+  // Create new game and round IDs
   const gameId = `game${Object.keys(roomData.games || {}).length + 1}`;
   const roundId = `round1`;
 
+  // Prepare player songs and votes
   const playerSongs: Record<string, string> = {};
+  const votes: Record<string, string> = {};
+
   Object.keys(roomData.players).forEach((playerId) => {
-    playerSongs[playerId] = ""; // Placeholder dla piosenek
+    playerSongs[playerId] = ""; // Placeholder for songs
+
+    // Exclude DJ from the initial votes
+    if (playerId !== sessionStore.playerId) {
+      votes[playerId] = ""; // Initialize vote as an empty string
+    }
   });
 
+  // Define the new game and round objects
   const newGame: Game = {
     id: gameId,
     djId: sessionStore.playerId!,
@@ -114,20 +123,28 @@ export const createGameAndRound = async (roomId: string): Promise<void> => {
       songId: "", // Placeholder
       songTitle: "", // Placeholder
       suggestedBy: "",
+      wasPlayed: false,
     },
-    votes: {},
+    votes: votes, // Pre-populated votes
     status: "voting",
   };
 
   newGame.rounds[roundId] = newRound;
 
-  // Aktualizacja Firebase
+  console.log("New Game:", newGame);
+  console.log("New Round:", newRound);
+
   await update(roomRef, {
-    [`games/${gameId}`]: newGame,
+    [`games/${gameId}`]: newGame, // Update the game object without rounds
     currentGame: gameId,
     currentRound: roundId,
     status: "song_selection",
   });
 
-  sessionStore.subscribeToCurrentGame(); // Startuje nasłuchiwanie gry i rundy
+  // Update the specific round separately
+  await update(roomRef, {
+    [`games/${gameId}/rounds/${roundId}`]: newRound, // Update the round object
+  });
+
+  sessionStore.subscribeToCurrentGame();
 };

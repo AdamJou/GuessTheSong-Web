@@ -8,6 +8,7 @@ import Lobby from "@/views/Lobby.vue";
 import SongSelection from "@/views/SongSelection.vue";
 import DjPanel from "@/views/DjPanel.vue";
 import VotingView from "@/views/VotingView.vue";
+import PlaySongView from "@/views/PlaySongView.vue";
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -32,6 +33,11 @@ const routes: Array<RouteRecordRaw> = [
     component: VotingView,
   },
 
+  {
+    path: "/play/:roomId",
+    name: "PlaySong",
+    component: PlaySongView,
+  },
   {
     path: "/song-selection/:roomId", // Dodajemy trasę dla SongSelection
     name: "SongSelection",
