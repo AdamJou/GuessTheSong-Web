@@ -1,0 +1,66 @@
+{
+  "rooms": {
+    "123456": {
+      "id": "123456", // ID pokoju (kod dostępu)
+      "players": {
+        "player1": {
+          "id": "player1",
+          "name": "Alice",
+          "score": 10,
+          "ready": true
+        },
+        "player2": {
+          "id": "player2",
+          "name": "Bob",
+          "score": 15,
+          "ready": true
+        },
+        "player3": {
+          "id": "player3",
+          "name": "Charlie",
+          "score": 12,
+          "ready": true
+        }
+      },
+      "currentGame": "game1",
+      "djId": "player2", // Obecny DJ
+      "status": "voting",
+      "games": {
+        "game1": {
+          "id": "game1",
+          "djId": "player1", // DJ odpowiedzialny za tę grę
+          "rounds": {
+            "round1": {
+              "id": "round1",
+              "song": {
+                "songId": "song123",
+                "songTitle": "Imagine",
+                "suggestedBy": "player1"
+              },
+              "votes": {
+                "player2": "player1", // player2 głosował na player1
+                "player3": "player2" // player3 głosował na player2
+              },
+              "status": "completed"
+            },
+            "round2": {
+              "id": "round2",
+              "song": {
+                "songId": "song456",
+                "songTitle": "Let It Be",
+                "suggestedBy": "player2"
+              },
+              "votes": {},
+              "status": "voting"
+            }
+          }
+        },
+        "game2": {
+          "id": "game2",
+          "djId": "player2", // DJ odpowiedzialny za tę grę
+          "rounds": {}
+        }
+      }
+    }
+  }
+}

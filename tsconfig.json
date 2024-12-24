@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".", // Ustawienie podstawowej ścieżki
+    "paths": {
+      "@/*": ["src/*"] // Definicja aliasu @ wskazującego na src/
+    },
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "strict": true,
+    "jsx": "preserve",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["vite/client"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue"],
+  "exclude": ["node_modules"]
+}
