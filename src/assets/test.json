@@ -22,7 +22,8 @@
           "ready": true
         }
       },
-      "currentGame": "game1",
+      "currentGame": "1",
+      "currentRound": "1",
       "djId": "player2", // Obecny DJ
       "status": "voting",
       "games": {

@@ -4,7 +4,6 @@ import { navigationGuard } from "./navigationGuards";
 
 import NicknameInput from "@/components/NicknameInput.vue";
 import HomeView from "@/views/HomeView.vue";
-import JoinGame from "@/views/JoinGame.vue";
 import Lobby from "@/views/Lobby.vue";
 
 const routes: Array<RouteRecordRaw> = [
@@ -23,11 +22,7 @@ const routes: Array<RouteRecordRaw> = [
     name: "Lobby",
     component: Lobby,
   },
-  {
-    path: "/join",
-    name: "JoinGame",
-    component: JoinGame,
-  },
+
   {
     path: "/:catchAll(.*)",
     redirect: "/",
