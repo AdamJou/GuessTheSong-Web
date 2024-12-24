@@ -1,10 +1,10 @@
 import { getDatabase, ref as dbRef, get } from "firebase/database";
 import type { RouteLocationNormalized, NavigationGuardNext } from "vue-router";
 import type { Room } from "../types/types";
+import { useSessionStore } from "@/stores/session";
 
 const database = getDatabase();
 
-// Funkcja sprawdzająca stan pokoju i przekierowująca w zależności od roli i statusu
 export const handleRoomNavigation = async (
   roomId: string,
   playerId: string,
@@ -20,26 +20,21 @@ export const handleRoomNavigation = async (
 
       if (room.status === "waiting") {
         if (room.djId === playerId) {
-          // DJ: Przekieruj na Lobby
           if (to.name !== "Lobby") {
             console.log("DJ. Przekierowanie na Lobby.");
             return next({ name: "Lobby", params: { roomId } });
           }
         } else {
-          // Gracz: Przekieruj na Lobby
           if (to.name !== "Lobby") {
             console.log("Gracz. Przekierowanie na Lobby.");
             return next({ name: "Lobby", params: { roomId } });
           }
         }
       } else if (room.status === "song_selection") {
-        // Przekierowanie w zależności od statusu gry
         console.log("Przekierowanie na SongSelection.");
         return next({ name: "SongSelection", params: { roomId } });
       }
-      // Można dodać kolejne fazy gry
     } else {
-      // Pokój nie istnieje
       console.log("Pokój nie istnieje. Przekierowanie na HomeView.");
       sessionStorage.removeItem("roomId");
       return next({ name: "HomeView" });
@@ -49,23 +44,34 @@ export const handleRoomNavigation = async (
     return next({ name: "HomeView" });
   }
 
-  // Jeśli wszystko jest w porządku
   next();
 };
 
-// Funkcja główna obsługująca logikę nawigacji
 export const navigationGuard = async (
   to: RouteLocationNormalized,
   from: RouteLocationNormalized,
   next: NavigationGuardNext
 ) => {
-  const playerId = sessionStorage.getItem("playerId");
-  const roomId = sessionStorage.getItem("roomId");
+  const sessionStore = useSessionStore();
+  const { playerId, nickname, roomId } = sessionStore;
+
+  // Obsługa sytuacji, gdy użytkownik wchodzi na Lobby z linkiem
+  if (to.name === "Lobby" && to.params.roomId) {
+    if (!playerId || !nickname) {
+      console.log(
+        "Brak playerId lub nickname. Przekierowanie na NicknameInput."
+      );
+      sessionStorage.setItem("redirectAfterNickname", to.fullPath); // Zapamiętaj docelową trasę
+      return next({ name: "NicknameInput" });
+    }
+    if (roomId !== to.params.roomId) {
+      sessionStore.setRoomId(to.params.roomId as string);
+    }
+  }
 
   // 1. Brak playerId -> zawsze przekieruj na NicknameInput
   if (!playerId) {
     if (to.name !== "NicknameInput") {
-      console.log("Brak playerId. Przekierowanie na NicknameInput.");
       return next({ name: "NicknameInput" });
     }
     return next();
@@ -75,7 +81,6 @@ export const navigationGuard = async (
   if (playerId && !roomId) {
     const allowedRoutes = ["HomeView", "JoinGame"];
     if (!allowedRoutes.includes(to.name as string)) {
-      console.log("Brak roomId. Przekierowanie na HomeView.");
       return next({ name: "HomeView" });
     }
     return next();
@@ -87,6 +92,5 @@ export const navigationGuard = async (
     return;
   }
 
-  // Jeśli wszystkie warunki spełnione, przepuszczamy dalej
   next();
 };

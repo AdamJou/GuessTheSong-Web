@@ -54,17 +54,24 @@ export const joinGame = async (roomId: string): Promise<void> => {
     throw new Error("Room not found.");
   }
 
-  const newPlayer: Player = {
-    id: sessionStore.playerId,
-    name: sessionStore.nickname,
-    score: 0,
-    ready: false,
-  };
+  const roomData: Room = snapshot.val();
 
-  await set(
-    dbRef(database, `rooms/${roomId}/players/${sessionStore.playerId}`),
-    newPlayer
-  );
+  // Sprawdzenie, czy gracz już istnieje w pokoju
+  if (!roomData.players[sessionStore.playerId]) {
+    const newPlayer: Player = {
+      id: sessionStore.playerId,
+      name: sessionStore.nickname,
+      score: 0,
+      ready: false,
+    };
+
+    await set(
+      dbRef(database, `rooms/${roomId}/players/${sessionStore.playerId}`),
+      newPlayer
+    );
+
+    console.log(`Player ${sessionStore.nickname} added to room ${roomId}`);
+  }
 
   sessionStore.setRoomId(roomId);
 };
