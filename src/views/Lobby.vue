@@ -1,6 +1,7 @@
 <template>
   <div class="lobby">
     <h1>Room Lobby</h1>
+    <Status />
     <p>
       Room Code: <strong>{{ roomId }}</strong>
     </p>
@@ -17,58 +18,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { computed, watch, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import { createGameAndRound } from "@/services/gameService";
 import { useSessionStore } from "@/stores/session";
-import {
-  getDatabase,
-  ref as dbRef,
-  onValue,
-  type DataSnapshot,
-} from "firebase/database";
-import type { Player } from "@/types/types";
+import Status from "@/views/Status.vue";
 
-// Pobierz parametry routingu
-const route = useRoute();
+// Router i session store
 const router = useRouter();
-
-// Pobierz dane z store
 const sessionStore = useSessionStore();
-const roomId = sessionStore.roomId;
 
-// Typowane refy dla stanu komponentu
-const players = ref<Record<string, Player>>({});
-const djId = ref<string>("");
-
-// Pobieranie danych pokoju w czasie rzeczywistym
-const listenToRoom = () => {
-  const roomRef = dbRef(getDatabase(), `rooms/${roomId}`);
-  onValue(roomRef, (snapshot: DataSnapshot) => {
-    const roomData = snapshot.val() as {
-      players?: Record<string, Player>;
-      djId?: string;
-      status?: string;
-    };
-
-    if (roomData) {
-      players.value = roomData.players || {};
-      djId.value = roomData.djId || "";
-
-      // Automatyczne przekierowanie na SongSelection, jeśli status zmienia się na "song_selection"
-      if (roomData.status === "song_selection") {
-        router.push(`/song-selection/${roomId}`);
-      }
-    }
-  });
-};
+// Komputowane właściwości z session store
+const roomId = computed(() => sessionStore.roomId);
+const players = computed(() => sessionStore.players);
+const djId = computed(() => sessionStore.djId);
+const gameStatus = computed(() => sessionStore.gameStatus); // Obserwacja statusu gry
+const isDj = computed(() => sessionStore.playerId === djId.value);
+const canStartGame = computed(
+  () => Object.keys(players.value || {}).length > 1
+);
 
 // Funkcja dołączania gracza do pokoju
 const ensurePlayerInRoom = async () => {
   try {
     const { joinGame } = await import("@/services/gameService");
-    if (roomId) {
-      await joinGame(roomId); // Dodaj gracza do pokoju
+    if (roomId.value) {
+      await joinGame(roomId.value); // Dodaj gracza do pokoju
     } else {
       throw new Error("Room ID is missing.");
     }
@@ -82,8 +57,8 @@ const ensurePlayerInRoom = async () => {
 // Obsługa rozpoczęcia gry przez DJ-a
 const handleStartGame = async () => {
   try {
-    if (roomId) {
-      await createGameAndRound(roomId); // Tworzenie gry i pierwszej rundy
+    if (roomId.value) {
+      await createGameAndRound(roomId.value); // Tworzenie gry i pierwszej rundy
       console.log("Game started and players are redirected to SongSelection");
     } else {
       throw new Error("Room ID is missing.");
@@ -97,13 +72,21 @@ const handleStartGame = async () => {
   }
 };
 
-// Komputowane właściwości
-const isDj = computed(() => sessionStore.playerId === djId.value);
-const canStartGame = computed(() => Object.keys(players.value).length > 1);
-
 // Główna logika w onMounted
 onMounted(async () => {
   await ensurePlayerInRoom(); // Upewnij się, że gracz jest w pokoju
-  listenToRoom(); // Słuchaj zmian w pokoju
+});
+
+// Funkcja reagująca na zmianę statusu gry
+const handleGameStatusChange = (status: string | null) => {
+  if (!status) return;
+
+  if (status === "song_selection") {
+    router.push({ name: "SongSelection", params: { roomId: roomId.value } });
+  }
+};
+// Obserwacja `gameStatus` i reagowanie na jego zmiany
+watch(gameStatus, (newStatus) => {
+  handleGameStatusChange(newStatus);
 });
 </script>

@@ -4,7 +4,9 @@
     <p>
       Your Room Code: <strong>{{ roomId }}</strong>
     </p>
-    <form @submit.prevent="submitSong" v-if="!isSubmitted">
+    <Status />
+    <!-- FORMULARZ WYBORU PIOSENKI -->
+    <form @submit.prevent="submitSong" v-if="!hasSubmitted">
       <div>
         <label for="songId">Song ID:</label>
         <input
@@ -27,153 +29,152 @@
       </div>
       <button type="submit" :disabled="!canSubmit">Submit</button>
     </form>
-
+    <!-- OBSZAR INFORMUJĄCY, ŻE WSZYSCY GRACZE ZŁOŻYLI PIOSENKI -->
     <div v-if="allPlayersSubmitted">
       <p>
         Everyone has submitted their songs! Waiting for the game to start...
       </p>
-      <button v-if="isDj">Start Game</button>
+      <button v-if="isDj" @click="handleStartGame">Start Game</button>
+    </div>
+
+    <!-- STATUSY GRACZY ICH GOTOWOŚCI (Submitted / Not Submitted) -->
+    <div>
+      <h2>Player Status:</h2>
+      <ul v-if="players && Object.keys(players).length > 0">
+        <li v-for="(player, id) in players" :key="id">
+          {{ player.name }} -
+          <span :class="{ submitted: !!playerSongs[id] }">
+            {{ playerSongs[id] ? "Submitted" : "Not Submitted" }}
+          </span>
+        </li>
+      </ul>
+      <p v-else>Loading player statuses...</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
-import { useRoute } from "vue-router";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
+import { useRouter } from "vue-router";
 import { useSessionStore } from "@/stores/session";
-import {
-  getDatabase,
-  ref as dbRef,
-  onValue,
-  DataSnapshot,
-} from "firebase/database";
+import { getDatabase, ref as dbRef, onValue, off } from "firebase/database";
 import { updatePlayerSong } from "@/services/songService";
+import Status from "./Status.vue";
 
-// Room and Current Game
-const route = useRoute();
+// Inicjalizacja routera i store'ów
+const router = useRouter();
 const sessionStore = useSessionStore();
 
-const roomId = sessionStore.roomId as string; // Room ID z store, wymuszenie typu
-const currentGame = ref<string | null>(null); // Current Game ID w czasie rzeczywistym
-const playerId = sessionStore.playerId as string; // Player ID z store
+// Dane z sessionStore
+const roomId = sessionStore.roomId as string;
+const playerId = sessionStore.playerId as string;
+const currentGame = computed(() => sessionStore.currentGame);
+const players = computed(() => sessionStore.players);
+const isDj = computed(() => sessionStore.djId === playerId);
+const gameStatus = computed(() => sessionStore.gameStatus);
+console.log("isDj", isDj.value);
 
-// Form Data
-const songId = ref<string>("");
-const songTitle = ref<string>("");
-const isSubmitted = ref<boolean>(false);
-const djId = ref<string>("");
+// Lokalne dane formularza
+const songId = ref("");
+const songTitle = ref("");
+const playerSongs = ref<Record<string, string>>({});
 
-const allPlayersSubmitted = ref<boolean>(false);
+// Obliczenia bazujące na `playerSongs`
+const hasSubmitted = computed(() => !!playerSongs.value[playerId]);
+const allPlayersSubmitted = computed(() => {
+  const totalPlayers = Object.keys(players.value || {});
+  return totalPlayers.every((id) => !!playerSongs.value[id]);
+});
 
-// Computed, aby włączyć/wyłączyć przycisk Submit
-const canSubmit = computed(() => songId.value.trim() && songTitle.value.trim());
-const isDj = computed(() => sessionStore.playerId === djId.value);
-
-// Nasłuchiwanie aktualnego `currentGame`
-const listenToCurrentGame = () => {
-  const db = getDatabase();
-  const currentGameRef = dbRef(db, `rooms/${roomId}/currentGame`);
-
-  onValue(currentGameRef, (snapshot) => {
-    if (snapshot.exists()) {
-      currentGame.value = snapshot.val();
-      listenToPlayerSong();
-      checkAllPlayersSubmitted(); // Sprawdź, czy wszyscy gracze już przesłali piosenkę
-    } else {
-      console.error("No current game found for this room.");
-    }
-  });
-};
-
-const listenToRoom = () => {
-  const roomRef = dbRef(getDatabase(), `rooms/${roomId}`);
-  onValue(roomRef, (snapshot: DataSnapshot) => {
-    const roomData = snapshot.val() as {
-      djId?: string;
-      status?: string;
-    };
-
-    if (roomData) {
-      djId.value = roomData.djId || "";
-    }
-  });
-};
-
-// Nasłuchiwanie, czy gracz już przesłał piosenkę
-const listenToPlayerSong = () => {
-  const songRef = dbRef(
-    getDatabase(),
-    `rooms/${roomId}/games/${currentGame.value}/playerSongs/${playerId}`
-  );
-  onValue(songRef, (snapshot) => {
-    const songData = snapshot.val();
-    if (songData) {
-      isSubmitted.value = true;
-    }
-  });
-};
-
-const checkAllPlayersSubmitted = () => {
-  const songsRef = dbRef(
-    getDatabase(),
-    `rooms/${roomId}/games/${currentGame.value}/playerSongs`
-  );
-  const playersRef = dbRef(getDatabase(), `rooms/${roomId}/players`);
-
-  // Pobieramy wszystkich graczy w pokoju
-  onValue(playersRef, (playersSnapshot) => {
-    if (playersSnapshot.exists()) {
-      const players = playersSnapshot.val();
-      const totalPlayers = Object.keys(players);
-
-      // Pobieramy przesłane piosenki
-      onValue(songsRef, (songsSnapshot) => {
-        if (songsSnapshot.exists()) {
-          const submittedSongs = songsSnapshot.val();
-
-          // Sprawdzamy, czy każda piosenka w `playerSongs` jest poprawnie uzupełniona
-          allPlayersSubmitted.value = totalPlayers.every((playerId) => {
-            const songData = submittedSongs[playerId];
-            return songData && songData.songId && songData.songTitle;
-          });
-        }
-      });
-    } else {
-      console.log("Brak graczy w pokoju.");
-    }
-  });
-};
+// Walidacja formularza
+const canSubmit = computed(() => songId.value.trim() && songTitle.value);
 
 // Funkcja przesyłania piosenki
 const submitSong = async () => {
-  try {
-    if (canSubmit.value && roomId && playerId && currentGame.value) {
-      await updatePlayerSong(
-        roomId,
-        currentGame.value,
-        playerId,
-        songId.value,
-        songTitle.value
-      );
-      isSubmitted.value = true;
-    } else {
-      alert("Please fill in both Song ID and Song Title.");
-    }
-  } catch (error) {
-    console.error("Error submitting song:", error);
-    alert("An error occurred while submitting your song. Please try again.");
+  if (canSubmit.value) {
+    await updatePlayerSong(
+      roomId,
+      currentGame.value!,
+      playerId,
+      songId.value,
+      songTitle.value
+    );
   }
 };
 
-// Walidacja przy `onMounted`
-onMounted(() => {
-  if (!roomId || !playerId) {
-    console.error("Missing roomId or playerId in session.");
-  } else {
-    listenToCurrentGame(); // Rozpocznij nasłuchiwanie aktualnej gry
-    listenToRoom();
+// Subskrypcja do zmian w playerSongs
+let unsubscribe: (() => void) | null = null;
+
+const subscribeToPlayerSongs = () => {
+  const db = getDatabase();
+  const path = `rooms/${roomId}/games/${currentGame.value}/playerSongs`;
+  const songsRef = dbRef(db, path);
+
+  unsubscribe = onValue(songsRef, (snapshot) => {
+    playerSongs.value = snapshot.exists() ? snapshot.val() : {};
+  });
+};
+
+const unsubscribeFromPlayerSongs = () => {
+  if (unsubscribe) {
+    unsubscribe();
+    unsubscribe = null;
   }
+};
+
+// Subskrypcje na `currentGame`
+watch(
+  currentGame,
+  (newGame) => {
+    unsubscribeFromPlayerSongs();
+    if (newGame) {
+      subscribeToPlayerSongs();
+    }
+  },
+  { immediate: true }
+);
+
+onBeforeUnmount(() => {
+  unsubscribeFromPlayerSongs();
 });
+
+const handleStartGame = async () => {
+  try {
+    await sessionStore.setGameStatus("voting");
+    handleGameStatusChange("voting");
+  } catch (error) {
+    console.error("Error starting the game:", error);
+    alert("An error occurred while starting the game. Please try again.");
+  }
+};
+
+// Funkcja reagująca na zmianę statusu gry
+const handleGameStatusChange = (status: string | null) => {
+  if (!status) return;
+
+  if (status === "voting") {
+    if (isDj.value) {
+      router.push({ name: "DjPanel", params: { roomId } });
+    } else {
+      router.push({ name: "Voting", params: { roomId } });
+    }
+  }
+};
+// Obserwacja `gameStatus` i reagowanie na jego zmiany
+watch(gameStatus, (newStatus) => {
+  handleGameStatusChange(newStatus);
+});
+
+watch(
+  currentGame,
+  (newGameId) => {
+    if (newGameId) {
+      unsubscribeFromPlayerSongs();
+      subscribeToPlayerSongs();
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>
@@ -202,5 +203,10 @@ button {
   padding: 10px 20px;
   font-size: 16px;
   cursor: pointer;
+}
+
+.submitted {
+  color: green;
+  font-weight: bold;
 }
 </style>

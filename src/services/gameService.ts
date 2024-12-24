@@ -2,6 +2,7 @@ import { getDatabase, ref as dbRef, set, update, get } from "firebase/database";
 import { useSessionStore } from "@/stores/session";
 import type { Room, Player, Game, Round } from "../types/types";
 import { generateRoomCode } from "@/utils/roomCodeGenerator";
+
 const database = getDatabase();
 
 export const createGame = async (): Promise<string> => {
@@ -36,6 +37,8 @@ export const createGame = async (): Promise<string> => {
   await set(roomRef, newRoom);
 
   sessionStore.setRoomId(roomId);
+  sessionStore.subscribeToRoomStatus(); // Startuje nasłuchiwanie statusu pokoju
+  sessionStore.subscribeToCurrentGame(); // Startuje nasłuchiwanie gry i rundy
 
   return roomId;
 };
@@ -74,6 +77,8 @@ export const joinGame = async (roomId: string): Promise<void> => {
   }
 
   sessionStore.setRoomId(roomId);
+  sessionStore.subscribeToRoomStatus(); // Startuje nasłuchiwanie statusu pokoju
+  sessionStore.subscribeToCurrentGame(); // Startuje nasłuchiwanie gry i rundy
 };
 
 export const createGameAndRound = async (roomId: string): Promise<void> => {
@@ -88,7 +93,7 @@ export const createGameAndRound = async (roomId: string): Promise<void> => {
   const roomData: Room = snapshot.val();
 
   // Tworzenie nowej gry
-  const gameId = `game1`;
+  const gameId = `game${Object.keys(roomData.games || {}).length + 1}`;
   const roundId = `round1`;
 
   const playerSongs: Record<string, string> = {};
@@ -123,4 +128,6 @@ export const createGameAndRound = async (roomId: string): Promise<void> => {
     currentRound: roundId,
     status: "song_selection",
   });
+
+  sessionStore.subscribeToCurrentGame(); // Startuje nasłuchiwanie gry i rundy
 };
