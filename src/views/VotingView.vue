@@ -1,6 +1,6 @@
 <template>
   <div class="voting-view">
-    <h1>Voting View</h1>
+    <h1>Voting View {{ currentRound }}</h1>
 
     <!-- Display message while waiting for DJ -->
     <p v-if="!currentSong">Waiting for DJ to set a song...</p>
@@ -11,9 +11,8 @@
       <p><strong>Song ID:</strong> {{ currentSong.songId }}</p>
       <p><strong>Song Title:</strong> {{ currentSong.songTitle }}</p>
     </div>
-
     <!-- Voting Section -->
-    <div v-if="currentSong && !hasVoted">
+    <div v-if="currentSong.songId && !hasVoted">
       <h2>Vote for who you think suggested this song:</h2>
       <ul>
         <li
@@ -38,7 +37,7 @@
     </div>
 
     <!-- Display Real-Time Votes -->
-    <div v-if="Object.keys(votes).length > 0">
+    <div v-if="hasVoted">
       <h2>Votes So Far</h2>
       <ul>
         <li v-for="(votedFor, voter) in votes" :key="voter">
