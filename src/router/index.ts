@@ -9,7 +9,7 @@ import SongSelection from "@/views/SongSelection.vue";
 import DjPanel from "@/views/DjPanel.vue";
 import VotingView from "@/views/VotingView.vue";
 import PlaySongView from "@/views/PlaySongView.vue";
-
+import SummaryView from "@/views/SummaryView.vue";
 const routes: Array<RouteRecordRaw> = [
   {
     path: "/",
@@ -43,6 +43,12 @@ const routes: Array<RouteRecordRaw> = [
     name: "SongSelection",
     component: SongSelection,
   },
+  {
+    path: "/summary/:roomId", // Dodajemy trasę dla SongSelection
+    name: "Summary",
+    component: SummaryView,
+  },
+
   {
     path: "/:catchAll(.*)",
     redirect: "/",

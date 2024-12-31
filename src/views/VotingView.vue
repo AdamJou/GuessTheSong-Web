@@ -49,12 +49,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onBeforeUnmount } from "vue";
 import { getDatabase, ref as dbRef, onValue, update } from "firebase/database";
 import { useSessionStore } from "@/stores/session";
+import { useRouter } from "vue-router";
 import { useVotes } from "@/composables/useVotes";
 
-// Session Store
+// Router and Session Store
+const router = useRouter();
 const sessionStore = useSessionStore();
 
 // Reactive Data
@@ -63,9 +65,10 @@ const currentGame = computed(() => sessionStore.currentGame);
 const currentRound = computed(() => sessionStore.currentRound);
 const players = computed(() => sessionStore.players);
 const playerId = computed(() => sessionStore.playerId);
+const isDJ = computed(() => sessionStore.djId === playerId.value);
 const currentSong = ref<{ songId: string; songTitle: string } | null>(null);
-
 const selectedPlayer = ref<string | null>(null);
+const roomStatus = ref<string | null>(null);
 
 // Use the reusable useVotes composable
 const { votes, hasVoted, votedPlayer, getPlayerName, resetVotes } = useVotes();
@@ -80,9 +83,32 @@ const otherPlayers = computed(() =>
   }, {} as Record<string, { name: string }>)
 );
 
-// Firebase Subscription Management for Song
+// Firebase Subscription Management for Room Status and Song
 let songUnsubscribe: (() => void) | null = null;
+let roomStatusUnsubscribe: (() => void) | null = null;
 
+// Subscribe to Room Status
+const subscribeToRoomStatus = () => {
+  if (!roomId.value) return;
+
+  const db = getDatabase();
+  const roomStatusRef = dbRef(db, `rooms/${roomId.value}/status`);
+  roomStatusUnsubscribe = onValue(roomStatusRef, (snapshot) => {
+    roomStatus.value = snapshot.val();
+    if (roomStatus.value === "summary") {
+      router.push({ name: "Summary", params: { roomId: roomId.value } });
+    }
+  });
+};
+
+const unsubscribeFromRoomStatus = () => {
+  if (roomStatusUnsubscribe) {
+    roomStatusUnsubscribe();
+    roomStatusUnsubscribe = null;
+  }
+};
+
+// Subscribe to Current Song
 const subscribeToSong = () => {
   if (!roomId.value || !currentGame.value || !currentRound.value) return;
 
@@ -146,6 +172,14 @@ const submitVote = async () => {
 
   alert("Vote submitted successfully!");
 };
+
+// Initial Setup: Subscribe to Room Status
+subscribeToRoomStatus();
+
+onBeforeUnmount(() => {
+  unsubscribeFromSong();
+  unsubscribeFromRoomStatus();
+});
 </script>
 
 <style scoped>

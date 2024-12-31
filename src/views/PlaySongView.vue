@@ -1,5 +1,5 @@
 <template>
-  <div class="play-song-view">
+  <div class="play-song-view" v-if="roomId">
     <h1>Play Song</h1>
 
     <!-- Display current song -->
@@ -31,6 +31,8 @@ import { getDatabase, ref as dbRef, onValue, update } from "firebase/database";
 import { useSessionStore } from "@/stores/session";
 import { useVotes } from "@/composables/useVotes";
 import { useRouter } from "vue-router";
+import { useScoreCalculator } from "@/composables/useScoreCalculator";
+const { calculateAndSaveScores } = useScoreCalculator();
 
 // Session Store and Router
 const sessionStore = useSessionStore();
@@ -43,7 +45,6 @@ const currentRound = computed(() => sessionStore.currentRound);
 const players = computed(() => sessionStore.players);
 const playerId = computed(() => sessionStore.playerId);
 const currentSong = ref<{ songId: string; songTitle: string } | null>(null);
-
 // Use the reusable useVotes composable
 const { votes, getPlayerName } = useVotes();
 
@@ -99,14 +100,33 @@ const goBackToSongSelection = async () => {
     const gamePath = `rooms/${roomId.value}/games/${currentGame.value}`;
     const roomPath = `rooms/${roomId.value}`; // Root path for the room
 
+    // Get the current round number
+    const currentRoundNumber = parseInt(
+      currentRound.value!.replace("round", "")
+    );
+    const playerCount = Object.values(players.value || {}).length;
+
+    // Check if a new round should be created
+    if (currentRoundNumber >= playerCount) {
+      console.log("Cannot create a new round: All players have had a turn.");
+      alert("Cannot create a new round. All players have already played.");
+      await calculateAndSaveScores(roomId.value!, currentGame.value!);
+
+      await update(dbRef(db, roomPath), {
+        status: "summary",
+      });
+      router.push({ name: "Summary", params: { roomId: roomId.value } });
+
+      return; // Exit the function
+    }
+
     // Mark the current round as completed
     await update(dbRef(db, currentRoundPath), {
       status: "completed",
     });
 
     // Generate next round ID
-    const nextRoundNumber =
-      parseInt(currentRound.value!.replace("round", "")) + 1;
+    const nextRoundNumber = currentRoundNumber + 1;
     const nextRoundId = `round${nextRoundNumber}`;
 
     // Initialize votes for all players except the DJ

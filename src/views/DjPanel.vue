@@ -5,10 +5,11 @@
       Room ID: <strong>{{ roomId }}</strong>
     </p>
     <h2>Players' Songs</h2>
-    <ul v-if="playerSongs">
+
+    <ul v-if="unplayedSongs.length > 0">
       <li
-        v-for="(song, playerId) in playerSongs"
-        :key="playerId"
+        v-for="([playerId, song], index) in unplayedSongs"
+        :key="index"
         @click="selectSong(playerId, song)"
         class="song-item"
         :class="{ selected: selectedPlayerId === playerId }"
@@ -19,7 +20,8 @@
         <strong>Was Played:</strong> {{ song.wasPlayed ? "Yes" : "No" }}
       </li>
     </ul>
-    <p v-else>Loading songs...</p>
+
+    <p v-else>No unplayed songs available.</p>
     <div v-if="selectedSong">
       <h3>Selected Song</h3>
       <p><strong>Song ID:</strong> {{ selectedSong.songId }}</p>
@@ -49,7 +51,7 @@ const sessionStore = useSessionStore();
 const roomId = sessionStorage.getItem("roomId") as string;
 const currentGame = computed(() => sessionStore.currentGame);
 const currentRound = computed(() => sessionStore.currentRound);
-
+const allSongsPlayed = ref(false);
 // Reactive variable for storing player songs and selected song
 const playerSongs = ref<Record<string, PlayerSong>>({});
 
@@ -63,6 +65,10 @@ const selectedSong = ref<{
 // Firebase subscription management
 let unsubscribe: (() => void) | null = null;
 
+const unplayedSongs = computed(() =>
+  Object.entries(playerSongs.value).filter(([_, song]) => !song.wasPlayed)
+);
+
 const subscribeToPlayerSongs = () => {
   const db = getDatabase();
   const gameId = currentGame.value;
@@ -75,6 +81,10 @@ const subscribeToPlayerSongs = () => {
     } else {
       playerSongs.value = {};
     }
+    allSongsPlayed.value = Object.values(playerSongs.value).every(
+      (song) => song.wasPlayed
+    );
+    console.log(allSongsPlayed.value);
   });
 };
 
