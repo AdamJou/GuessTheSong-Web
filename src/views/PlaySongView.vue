@@ -27,7 +27,13 @@
 </template>
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { getDatabase, ref as dbRef, onValue, update } from "firebase/database";
+import {
+  getDatabase,
+  ref as dbRef,
+  onValue,
+  update,
+  get,
+} from "firebase/database";
 import { useSessionStore } from "@/stores/session";
 import { useVotes } from "@/composables/useVotes";
 import { useRouter } from "vue-router";
@@ -109,15 +115,122 @@ const goBackToSongSelection = async () => {
     // Check if a new round should be created
     if (currentRoundNumber >= playerCount) {
       console.log("Cannot create a new round: All players have had a turn.");
+      await update(dbRef(db, currentRoundPath), {
+        status: "completed",
+      });
       alert("Cannot create a new round. All players have already played.");
+      await update(dbRef(db, roomPath), {
+        currentRound: "round1", // Update root-level currentRound
+      });
+      //HERE
       await calculateAndSaveScores(roomId.value!, currentGame.value!);
 
+      // 1) Wydobywamy numer z obecnego currentGame (np. "1" z "game1")
+      const currentGameNumber = parseInt(
+        currentGame.value!.replace("game", "")
+      );
+      const nextGameNumber = currentGameNumber + 1;
+      const nextGameId = `game${nextGameNumber}`;
+
+      // 2) Resetujemy currentRound na "round1"
+      //    i ustawiamy w rooms/{roomId} -> currentGame = nextGameId
+      await update(dbRef(db, roomPath), {
+        currentGame: nextGameId,
+        currentRound: "round1",
+      });
+
+      // 3) Wybieramy nowego DJ-a:
+      //    - sprawdzamy, kto był DJ‑em w poprzednich grach
+      //    - bierzemy zaktualizowanych graczy z największą liczbą punktów (którzy nie byli DJ‑ami)
+      const roomSnap = await get(dbRef(db, roomPath));
+      if (!roomSnap.exists()) {
+        throw new Error("Room data not found");
+      }
+      const roomVal = roomSnap.val() || {};
+      const allGames = roomVal.games || {};
+
+      // Tworzymy zbiór użytych DJ‑ów (z dotychczasowych gier)
+      const usedDjIds = new Set<string>();
+      Object.values(allGames).forEach((g: any) => {
+        if (g.djId) {
+          usedDjIds.add(g.djId);
+        }
+      });
+
+      // Po calculateAndSaveScores w bazie mamy uaktualnione "players" z punktami
+      const playersSnap = await get(dbRef(db, `${roomPath}/players`));
+      if (!playersSnap.exists()) {
+        throw new Error("No players found in this room");
+      }
+      const updatedPlayers = playersSnap.val() as Record<
+        string,
+        { id: string; score: number; name: string }
+      >;
+      const playersArray = Object.values(updatedPlayers);
+
+      // Odfiltrowujemy tych, którzy byli już DJ‑ami
+      const potentialNewDjs = playersArray.filter((p) => !usedDjIds.has(p.id));
+
+      // Sortujemy malejąco po score
+      potentialNewDjs.sort((a, b) => b.score - a.score);
+
+      // Najlepszy wynik wśród tych, którzy nie byli DJ-ami
+      let newDjId = "";
+      if (potentialNewDjs.length > 0) {
+        newDjId = potentialNewDjs[0].id;
+      } else {
+        console.warn(
+          "Wszyscy gracze byli już DJ‑ami – brak kandydata na DJ‑a."
+        );
+      }
+
+      // Ustawiamy nowego DJ-a w rooms/{roomId}/djId
+      await update(dbRef(db, roomPath), {
+        djId: newDjId,
+      });
+
+      // 4) Tworzymy nową grę w "rooms/{roomId}/games/{nextGameId}"
+      //    Z jedną rundą "round1" w statusie "song_selection".
+      //    W 'votes' inicjalizujemy tylko graczy, którzy nie są DJ‑em.
+      const nonDjVotes = Object.keys(updatedPlayers).filter(
+        (pid) => pid !== newDjId
+      );
+      const votesObj = nonDjVotes.reduce((acc, pid) => {
+        acc[pid] = "";
+        return acc;
+      }, {} as Record<string, string>);
+
+      const newGameObj = {
+        id: nextGameId,
+        djId: newDjId,
+        currentRound: "round1",
+        rounds: {
+          round1: {
+            id: "round1",
+            song: {
+              songId: "",
+              songTitle: "",
+              suggestedBy: "",
+              wasPlayed: false,
+            },
+            votes: votesObj, // <- inicjalizujemy id graczy (bez DJ‑a)
+            status: "song_selection",
+          },
+        },
+      };
+
+      // Zapisujemy nową grę w bazie
+      await update(dbRef(db, `${roomPath}/games`), {
+        [nextGameId]: newGameObj,
+      });
+
+      // 5) Dopiero teraz przechodzimy do summary
       await update(dbRef(db, roomPath), {
         status: "summary",
       });
-      router.push({ name: "Summary", params: { roomId: roomId.value } });
 
-      return; // Exit the function
+      router.push({ name: "Summary", params: { roomId: roomId.value } });
+      return;
     }
 
     // Mark the current round as completed
