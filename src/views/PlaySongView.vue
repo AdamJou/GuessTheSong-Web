@@ -7,6 +7,7 @@
       <h2>Current Song</h2>
       <p><strong>Song ID:</strong> {{ currentSong.songId }}</p>
       <p><strong>Song Title:</strong> {{ currentSong.songTitle }}</p>
+      <YouTubePlayer v-if="currentSong.songId" :songId="currentSong.songId" />
     </div>
 
     <!-- Display "Votes So Far" -->
@@ -38,6 +39,8 @@ import { useSessionStore } from "@/stores/session";
 import { useVotes } from "@/composables/useVotes";
 import { useRouter } from "vue-router";
 import { useScoreCalculator } from "@/composables/useScoreCalculator";
+import YouTubePlayer from "@/components/YouTubePlayer.vue";
+
 const { calculateAndSaveScores } = useScoreCalculator();
 
 // Session Store and Router

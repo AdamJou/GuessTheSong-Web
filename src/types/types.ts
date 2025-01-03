@@ -48,3 +48,30 @@ export interface Room {
   status: "waiting" | "song_selection" | "voting" | "summary"; // Status gry
   games: Record<string, Game>; // Gry w ramach pokoju
 }
+
+export interface YouTubeVideo {
+  id: {
+    videoId: string;
+  };
+  snippet: {
+    title: string;
+    description: string;
+    thumbnails: {
+      default: { url: string };
+      medium: { url: string };
+      high: { url: string };
+    };
+    channelTitle: string;
+    publishedAt: string;
+  };
+}
+
+export interface YouTubeSearchResponse {
+  kind: string;
+  etag: string;
+  items: YouTubeVideo[];
+  pageInfo: {
+    totalResults: number;
+    resultsPerPage: number;
+  };
+}
