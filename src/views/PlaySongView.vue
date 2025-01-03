@@ -128,10 +128,22 @@ const goBackToSongSelection = async () => {
       //HERE
       await calculateAndSaveScores(roomId.value!, currentGame.value!);
 
-      // 1) Wydobywamy numer z obecnego currentGame (np. "1" z "game1")
       const currentGameNumber = parseInt(
         currentGame.value!.replace("game", "")
       );
+      if (currentGameNumber >= playerCount) {
+        alert("All games have finished! The session is over.");
+        await update(dbRef(db, roomPath), {
+          status: "finished", // Oznaczamy w bazie, że rozgrywka się skończyła
+        });
+        router.push({ name: "Summary", params: { roomId: roomId.value } });
+        return;
+      }
+
+      // 1) Wydobywamy numer z obecnego currentGame (np. "1" z "game1")
+      /* const currentGameNumber = parseInt(
+        currentGame.value!.replace("game", "")
+      );*/
       const nextGameNumber = currentGameNumber + 1;
       const nextGameId = `game${nextGameNumber}`;
 

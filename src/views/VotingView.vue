@@ -95,7 +95,7 @@ const subscribeToRoomStatus = () => {
   const roomStatusRef = dbRef(db, `rooms/${roomId.value}/status`);
   roomStatusUnsubscribe = onValue(roomStatusRef, (snapshot) => {
     roomStatus.value = snapshot.val();
-    if (roomStatus.value === "summary") {
+    if (roomStatus.value === "summary" || roomStatus.value === "finished") {
       router.push({ name: "Summary", params: { roomId: roomId.value } });
     }
   });

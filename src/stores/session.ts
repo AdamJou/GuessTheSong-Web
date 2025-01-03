@@ -2,7 +2,12 @@ import { defineStore } from "pinia";
 import { getDatabase, ref as dbRef, onValue, update } from "firebase/database";
 
 // Zdefiniowane typy dla statusu gry i rundy.
-type GameStatus = "waiting" | "song_selection" | "voting" | "summary";
+type GameStatus =
+  | "waiting"
+  | "song_selection"
+  | "voting"
+  | "summary"
+  | "finished";
 type RoundStatus = "voting" | "completed";
 
 export const useSessionStore = defineStore("session", {
