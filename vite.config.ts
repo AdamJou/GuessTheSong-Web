@@ -3,18 +3,25 @@ import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import vueDevTools from "vite-plugin-vue-devtools";
+import eslintPlugin from "vite-plugin-eslint";
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue(), vueDevTools()],
+  plugins: [
+    vue(),
+    vueDevTools(),
+    eslintPlugin({
+      include: ["src/**/*.vue", "src/**/*.ts"], // Lintuj tylko pliki .vue i .ts
+      overrideConfigFile: ".eslintrc.cjs", // Wskaż ręcznie plik konfiguracyjny
+    }),
+  ],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
   server: {
-    host: true, // Pozwala na dostęp z zewnętrznych urządzeń
-    port: 5173, // Lub inny port
-    strictPort: true, // Zablokuj automatyczne zmiany portu
+    host: true,
+    port: 5173,
+    strictPort: true,
   },
 });

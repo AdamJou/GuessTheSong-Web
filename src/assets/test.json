@@ -22,13 +22,20 @@
           "ready": true
         }
       },
-      "currentGame": "game1",
+      "currentGame": "1",
+      "currentRound": "1",
       "djId": "player2", // Obecny DJ
       "status": "voting",
       "games": {
         "game1": {
           "id": "game1",
           "djId": "player1", // DJ odpowiedzialny za tę grę
+          "playerSongs": {
+            // Piosenki, które wybrali gracz (lacznie z dj)
+            "player1": "song123",
+            "player2": "song456",
+            "player3": "song789"
+          },
           "rounds": {
             "round1": {
               "id": "round1",

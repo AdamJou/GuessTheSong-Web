@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "guessthesongweb",
+  "private_key_id": "679f720f4bef8ffc8d2ff9e3886fa5d95d6abe80",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC7I4C3yvvB7cqV\nVdmzBbPl2YzqB6HwxFvbe7lhg6QVFkeOFHKddgM7n+4Fq79smIhIAtd5LCiS/MfB\nzszn/shDGbieI0ZadVTq0HSJfEryorGxximm7KOMyCBHABBurKp0A2TqIky3xif5\nWtmVmIz4b/pWDo2oGp8lKMWAhXYriTgikLXW9+AYChJ+qsoALD9/LV9pjaQmDhZe\n6F+tkuDIm/5z7IIN/hHW9BrFkWxL4ChyzaXCzR7U78/cneOWIQrVBwdbwxd2yJRH\nds2AwTUM2633nvLgh7Agb61LwUFf75lsQGODHLr6qUi2OZM+TOzA3yroACpgSM0v\nbcUpAEtPAgMBAAECggEADRqpC6NnHIub5a7acWmg0P76UM/W3pbqjFJFBzedxBDR\nnC+ly415sjFxVWxTGX8N/kF5Qb7sI9o8JPaxEWJUNxDvvAMY6F3SY9yvQ0FZbjC1\nLUY7oQHbWNoRiIvQCHkZFDfBxUWuKruoVqUcP2F1lHtsA54ZRUlcg4dUf3G0dl2S\nnvwDbmWit29JQU6mbaAZfdEqrNSqIWQWYbXFYzOKRdGjx+iDI3kwjNGJWb2CgY5/\n3kor1SnJMozuGnv7a/GLdFnEjMhjLHx3l3wR4KcodbOE094ebsQxxNtvL2trC40/\n9GsyWPtksDME8cF5TesB+ewRQFmVwJPVsJ43UnhcYQKBgQD1SDRowlGE26AZTZPw\n8HgjcF1Hy2z0i7zHHs/QaBpCltu/Kr4Uu9htMxpn+j3hBFiINXezLU4+rJNpsGzn\nxAQ8WGIwTLpzMeWLQBt6sUWNsock4qwx74Z2wEVuKIe96uHlRCV9sq+VjCmgjhIb\n1IDmfkShRDDx3cweTGkA2g3hmwKBgQDDUOPE1WlANXLkaDV+9oodIWBGJDyq7gdu\nvVyqkTCXK2Fry3G1K9hXYw5+DBE6LIm+9NSaGaEC2jVo2d2ViIUDM1LV3VFi36Kj\n83wUjBolL2TPkCVXQN5B9JxENMVYe0DD+E5JpC4pJuufWPtGOtt9jcgqyLk8eCJg\ny8kxakhiXQKBgFFFinAHquEdsG+R3+oek4ASlCXcxo5E2tkTYYJJbCISQF+YNwFB\nuJV+MEqxhN1RBlCjfrT01w83OWT0mzE0Jr8j/ezJD6Jprwgzxqcho80ukU7seGfX\nWLNyQ88bSNbpw82mhdGfakRf+88CJAfqooc84VqZ8KnDdwW3BbfNiHnvAoGAdR+Y\ntnxTdVGX6CgljFFDWVyeYvFwAABlLJ8ZZp9SSBSXgxCoyz/Tp/OayTNrUTtMDtq6\ncv5Tc2ZvCMU8/2KygMzSK7VgDK6W1UI5cgjh1NKq3V1PRxd7MIoC+1O50+l1WQ8Z\nw0dU9xCD0zaE2ASLgqr3EdD0Y7KWyvzpVVyqs3ECgYB6F5XSty4YFxWsy7uD4hm6\nyGBKUgIgCIpoPDTZ4w2Z4dJ8P2LCevpOdkOJSIcO1tcsYnZH4I/iUa09Djw+E0EJ\nS8jxBrZftVBmfPJT0KHD6YAlotyw3jFMcJJ4fgLifGm2T0Rn8eilmGKBUXY8vlWg\nG4HNHbvpcUc/6K1qRZkOxA==\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-ew3am@guessthesongweb.iam.gserviceaccount.com",
+  "client_id": "102471735881088015338",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-ew3am%40guessthesongweb.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
