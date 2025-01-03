@@ -4,7 +4,8 @@
     <p>
       Your Room Code: <strong>{{ roomId }}</strong>
     </p>
-    <Status />
+    <SongSearch />
+
     <!-- FORMULARZ WYBORU PIOSENKI -->
     <form @submit.prevent="submitSong" v-if="!hasSubmitted">
       <div>
@@ -60,7 +61,7 @@ import { useSessionStore } from "@/stores/session";
 import { getDatabase, ref as dbRef, onValue, off } from "firebase/database";
 import { updatePlayerSong } from "@/services/songService";
 import Status from "./Status.vue";
-
+import SongSearch from "@/components/SongSearch.vue";
 // Inicjalizacja routera i store'ów
 const router = useRouter();
 const sessionStore = useSessionStore();
