@@ -45,7 +45,7 @@ export interface Room {
   currentGame: string; // ID obecnej gry
   currentRound: string; // ID obecnej rundy
   djId: string; // ID obecnego DJ-a
-  status: "waiting" | "song_selection" | "voting" | "summary"; // Status gry
+  status: "waiting" | "song_selection" | "voting" | "summary" | "finished"; // Status gry
   games: Record<string, Game>; // Gry w ramach pokoju
 }
 

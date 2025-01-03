@@ -10,10 +10,14 @@
     <Status />
 
     <!-- Przycisk jest widoczny tylko dla DJ-a -->
-    <div v-if="isDj" class="dj-controls">
+    <div v-if="isDj && !isRoomFinished" class="dj-controls">
       <button @click="setSongSelection">
         Rozpocznij kolejną fazę (song_selection)
       </button>
+    </div>
+    <div v-if="isRoomFinished" class="finished-controls">
+      <p>Rozgrywka się zakończyła!</p>
+      <button @click="goHome">+ Powrót do strony głównej +</button> +
     </div>
   </div>
 </template>
@@ -41,6 +45,23 @@ const currentGame = computed(() => sessionStore.currentGame);
 const isDj = computed(() => {
   return sessionStore.playerId === sessionStore.djId;
 });
+
+/**
+ * (Nowe) Czy pokój jest już zakończony?
+ * Zakładam, że w store mamy 'roomStatus'.
+ * Jeśli przechowujesz informację o zakończonej grze pod inną nazwą,
+ * zmień warunek w środku.
+ */
+const isRoomFinished = computed(() => {
+  return sessionStore.gameStatus === "finished";
+});
+
+/**
+ * (Nowe) Funkcja, która przenosi gracza (i/lub wszystkich) na "/"
+ */
+function goHome() {
+  router.push("/");
+}
 
 /**
  * Funkcja zmienia status pokoju (rooms/{roomId}/status) na "song_selection".
