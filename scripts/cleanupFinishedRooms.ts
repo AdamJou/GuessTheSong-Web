@@ -1,25 +1,46 @@
-// scripts/cleanupFinishedRooms.ts
 import * as admin from "firebase-admin";
 
 async function main() {
   try {
+    console.log("Uruchamianie cleanup script...");
+
     // Wczytaj SERVICE_ACCOUNT z GitHub Secrets (base64-encoded)
     const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT || "";
+    console.log(
+      "Długość FIREBASE_SERVICE_ACCOUNT base64:",
+      serviceAccountBase64.length
+    );
+
+    if (!serviceAccountBase64) {
+      throw new Error(
+        "FIREBASE_SERVICE_ACCOUNT jest puste! Upewnij się, że sekret jest poprawnie ustawiony."
+      );
+    }
+
     const serviceAccountJson = Buffer.from(
       serviceAccountBase64,
       "base64"
     ).toString("utf8");
+    console.log("Długość zdekodowanego JSON:", serviceAccountJson.length);
+
+    if (!serviceAccountJson) {
+      throw new Error("Dekodowanie JSON z base64 nie powiodło się!");
+    }
+
     const serviceAccount = JSON.parse(serviceAccountJson);
 
+    // Inicjalizacja Firebase
+    console.log("Inicjalizacja Firebase...");
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
       databaseURL: process.env.FIREBASE_DATABASE_URL, // też w sekrecie
     });
 
+    console.log("Połączenie z Firebase Realtime Database...");
     const db = admin.database();
     const roomsRef = db.ref("rooms");
 
-    // Pobieramy wszystkie pokoje
+    console.log("Pobieranie danych z bazy...");
     const snapshot = await roomsRef.once("value");
 
     if (!snapshot.exists()) {
@@ -39,6 +60,11 @@ async function main() {
     });
 
     if (Object.keys(updates).length > 0) {
+      console.log(
+        `Znaleziono ${
+          Object.keys(updates).length
+        } pokoje do usunięcia. Rozpoczynam usuwanie...`
+      );
       // Usuwamy wszystkie "finished" jednym wywołaniem
       await roomsRef.update(updates);
       console.log(`Usunięto pokoje: ${Object.keys(updates).join(", ")}`);

@@ -20,10 +20,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # Kompilacja TypeScript (jeżeli potrzebujesz osobnego kroku)
-      - name: Build
-        run: npm run build --if-present
-
-      - name: Cleanup finished rooms
-        # Uruchamia skrypt TypeScript zdefiniowany w package.json
-        run: npm run cleanup
+      - name: Run cleanup script
+        run: npx ts-node --esm scripts/cleanupFinishedRooms.ts
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
