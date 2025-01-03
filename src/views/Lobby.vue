@@ -1,85 +1,92 @@
 <template>
   <div class="lobby">
     <h1>Room Lobby</h1>
+    <Status />
     <p>
       Room Code: <strong>{{ roomId }}</strong>
     </p>
-    <p>Share this code with others to join your game.</p>
-
     <h2>Players:</h2>
     <ul>
       <li v-for="(player, id) in players" :key="id">
-        {{ player.name }} ({{ id === djId ? "DJ" : "Player" }})
+        {{ player.name }} ({{ id === djId ? "DJ" : "Player" }} )
       </li>
     </ul>
-
-    <button v-if="isDj" @click="startGame" :disabled="!canStartGame">
+    <button v-if="isDj" @click="handleStartGame" :disabled="!canStartGame">
       Start Game
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
-import { useRouter, useRoute } from "vue-router";
-import { getDatabase, ref as dbRef, onValue, update } from "firebase/database";
-import type { Player } from "@/types";
+import { computed, watch, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { createGameAndRound } from "@/services/gameService";
+import { useSessionStore } from "@/stores/session";
+import Status from "@/views/Status.vue";
 
-const database = getDatabase();
+// Router i session store
 const router = useRouter();
-const route = useRoute();
+const sessionStore = useSessionStore();
 
-const roomId = route.params.roomId as string;
-const players = ref<Record<string, Player>>({});
-const djId = ref<string | null>(null);
+// Komputowane właściwości z session store
+const roomId = computed(() => sessionStore.roomId);
+const players = computed(() => sessionStore.players);
+const djId = computed(() => sessionStore.djId);
+const gameStatus = computed(() => sessionStore.gameStatus); // Obserwacja statusu gry
+const isDj = computed(() => sessionStore.playerId === djId.value);
+const canStartGame = computed(
+  () => Object.keys(players.value || {}).length > 1
+);
 
-// Pobieranie danych graczy w czasie rzeczywistym
-const listenToRoom = () => {
-  const roomRef = dbRef(database, `rooms/${roomId}`);
-  onValue(roomRef, (snapshot) => {
-    const roomData = snapshot.val();
-    if (roomData) {
-      players.value = roomData.players || {};
-      djId.value = roomData.djId || null;
+// Funkcja dołączania gracza do pokoju
+const ensurePlayerInRoom = async () => {
+  try {
+    const { joinGame } = await import("@/services/gameService");
+    if (roomId.value) {
+      await joinGame(roomId.value); // Dodaj gracza do pokoju
+    } else {
+      throw new Error("Room ID is missing.");
     }
-  });
+  } catch (error: any) {
+    console.error(error);
+    alert(error.message || "An error occurred.");
+    router.push("/home"); // Jeśli nie można dołączyć, wróć do HomeView
+  }
 };
 
-// Rozpoczęcie gry
-const startGame = async () => {
-  const roomRef = dbRef(database, `rooms/${roomId}`);
-  await update(roomRef, {
-    status: "song_selection",
-    currentGame: "game1",
-    currentRound: "round1",
-  });
-  router.push(`/song-selection/${roomId}`);
+// Obsługa rozpoczęcia gry przez DJ-a
+const handleStartGame = async () => {
+  try {
+    if (roomId.value) {
+      await createGameAndRound(roomId.value); // Tworzenie gry i pierwszej rundy
+      console.log("Game started and players are redirected to SongSelection");
+    } else {
+      throw new Error("Room ID is missing.");
+    }
+  } catch (error: any) {
+    console.error("Error starting the game:", error);
+    alert(
+      error.message ||
+        "An error occurred while starting the game. Please try again."
+    );
+  }
 };
 
-// Czy DJ może rozpocząć grę
-const isDj = computed(() => sessionStorage.getItem("playerId") === djId.value);
-const canStartGame = computed(() => Object.keys(players.value).length > 1);
+// Główna logika w onMounted
+onMounted(async () => {
+  await ensurePlayerInRoom(); // Upewnij się, że gracz jest w pokoju
+});
 
-onMounted(() => {
-  listenToRoom();
+// Funkcja reagująca na zmianę statusu gry
+const handleGameStatusChange = (status: string | null) => {
+  if (!status) return;
+
+  if (status === "song_selection") {
+    router.push({ name: "SongSelection", params: { roomId: roomId.value } });
+  }
+};
+// Obserwacja `gameStatus` i reagowanie na jego zmiany
+watch(gameStatus, (newStatus) => {
+  handleGameStatusChange(newStatus);
 });
 </script>
-
-<style scoped>
-.lobby {
-  text-align: center;
-  margin-top: 50px;
-}
-
-button {
-  padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
-  margin-top: 20px;
-}
-
-p {
-  margin-top: 20px;
-  font-size: 18px;
-}
-</style>
