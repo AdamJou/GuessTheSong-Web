@@ -21,7 +21,7 @@ jobs:
         run: npm install
 
       - name: Run cleanup script
-        run: npx ts-node --esm scripts/cleanupFinishedRooms.ts
+        run: npx ts-node scripts/cleanupFinishedRooms.ts
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
