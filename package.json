@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "cleanup": "tsc scripts/cleanupFinishedRooms.ts && node scripts/cleanupFinishedRooms.js",
     "dev": "vite",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
