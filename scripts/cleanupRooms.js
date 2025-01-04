@@ -3,8 +3,7 @@ import dotenv from "dotenv";
 
 // Load environment variables
 dotenv.config();
-console.log("FIREBASE_SERVICE_ACCOUNT:", process.env.FIREBASE_SERVICE_ACCOUNT);
-console.log("FIREBASE_DATABASE_URL:", process.env.FIREBASE_DATABASE_URL);
+
 // Parse Firebase service account credentials
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || "{}");
 
@@ -25,7 +24,7 @@ const cleanupRooms = async () => {
 
     if (!rooms) {
       console.log("No rooms found.");
-      return;
+      process.exit(0); // Exit with success
     }
 
     const updates = {};
@@ -42,8 +41,11 @@ const cleanupRooms = async () => {
     } else {
       console.log("No finished rooms to delete.");
     }
+
+    process.exit(0); // Exit after finishing
   } catch (error) {
     console.error("Error cleaning up rooms:", error);
+    process.exit(1); // Exit with error code
   }
 };
 
