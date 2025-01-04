@@ -4,7 +4,7 @@ async function main() {
   try {
     console.log("Uruchamianie cleanup script...");
 
-    // Wczytaj SERVICE_ACCOUNT z GitHub Secrets (czysty JSON)
+    // Pobierz SERVICE_ACCOUNT z GitHub Secrets
     const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT || "";
     console.log(
       "Długość FIREBASE_SERVICE_ACCOUNT JSON:",
@@ -17,14 +17,31 @@ async function main() {
       );
     }
 
-    // Parsowanie JSON
-    const serviceAccount = JSON.parse(serviceAccountJson);
+    // Walidacja i dekodowanie JSON-a, jeśli jest zakodowany w Base64
+    let serviceAccount: object;
+    try {
+      if (serviceAccountJson.trim().startsWith("{")) {
+        // Jeśli wygląda na zwykły JSON
+        serviceAccount = JSON.parse(serviceAccountJson);
+      } else {
+        // Jeśli jest zakodowany w Base64
+        console.log("Dekodowanie JSON-a z Base64...");
+        const decodedJson = Buffer.from(serviceAccountJson, "base64").toString(
+          "utf8"
+        );
+        serviceAccount = JSON.parse(decodedJson);
+      }
+    } catch (err) {
+      throw new Error(
+        "FIREBASE_SERVICE_ACCOUNT nie zawiera poprawnego JSON-a! Szczegóły: "
+      );
+    }
 
     // Inicjalizacja Firebase
     console.log("Inicjalizacja Firebase...");
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      databaseURL: process.env.FIREBASE_DATABASE_URL, // też w sekrecie
+      databaseURL: process.env.FIREBASE_DATABASE_URL, // Ustaw również w sekrecie
     });
 
     console.log("Połączenie z Firebase Realtime Database...");
