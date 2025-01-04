@@ -8,6 +8,7 @@
         placeholder="Your nickname"
         required
       />
+      <p v-if="error" class="error-message">{{ error }}</p>
       <button type="submit">Continue</button>
     </form>
   </div>
@@ -16,50 +17,62 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { useSessionStore } from "@/stores/session"; // Import naszego store
+import { getAuth, signInAnonymously } from "firebase/auth"; // Firebase auth
+import { getDatabase, ref as dbRef, set } from "firebase/database"; // Firebase database
+import { useSessionStore } from "@/stores/session"; // Session store
 
 const router = useRouter();
 const sessionStore = useSessionStore();
 const nickname = ref(sessionStore.nickname || ""); // Pobranie istniejącego nicku (jeśli jest)
+const error = ref(""); // Do przechowywania błędów
 
-// Funkcja do zapisu nicku
-const saveNickname = () => {
-  if (nickname.value.trim()) {
-    // Ustaw nickname w store
-    sessionStore.setNickname(nickname.value.trim());
+const saveNickname = async () => {
+  error.value = ""; // Reset error
 
-    // Generuj playerId, jeśli nie istnieje
-    if (!sessionStore.playerId) {
-      sessionStore.setPlayerId(generatePlayerId());
+  if (nickname.value.trim().length < 3) {
+    error.value = "Nickname must be at least 3 characters long.";
+    return;
+  }
+
+  try {
+    // Jeśli użytkownik nie jest zalogowany, zaloguj anonimowo
+    const auth = getAuth();
+    let userId = sessionStore.playerId;
+
+    if (!userId) {
+      const result = await signInAnonymously(auth);
+      userId = result.user.uid;
+      console.log("Anonymous user created with ID:", userId);
     }
 
-    // Sprawdź, czy istnieje zapamiętana ścieżka do przekierowania
+    // Zapisz nick i currentGame w Firebase Realtime Database
+    const db = getDatabase();
+    const playerRef = dbRef(db, `players/${userId}`);
+    await set(playerRef, {
+      nickname: nickname.value.trim(),
+      currentGame: "", // Początkowo puste
+    });
+
+    console.log("Player data saved:", userId);
+
+    // Zapisanie w session store
+    sessionStore.setNickname(nickname.value.trim());
+    sessionStore.setPlayerId(userId);
+
+    // Przekierowanie na stronę docelową, jeśli istnieje
     const redirectPath = sessionStorage.getItem("redirectAfterNickname");
     if (redirectPath) {
       sessionStorage.removeItem("redirectAfterNickname");
-      router
-        .push(redirectPath)
-        .then(() => console.log("Redirected to saved path:", redirectPath))
-        .catch((err) => console.error("Router error:", err));
+      await router.push(redirectPath);
+      console.log("Redirected to saved path:", redirectPath);
     } else {
-      // Jeśli brak ścieżki, przekieruj do Home
-      router
-        .push("/home")
-        .then(() => console.log("Redirected to /home"))
-        .catch((err) => console.error("Router error:", err));
+      await router.push("/home");
+      console.log("Redirected to /home");
     }
-  } else {
-    alert("Please enter a valid nickname.");
+  } catch (err) {
+    console.error("Error saving nickname:", err);
+    error.value = "An error occurred. Please try again.";
   }
-};
-
-// Funkcja do generowania playerId
-const generatePlayerId = (): string => {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === "x" ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
 };
 </script>
 
@@ -73,11 +86,17 @@ input {
   padding: 10px;
   font-size: 16px;
   width: 200px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 button {
   padding: 10px 20px;
   font-size: 16px;
+}
+
+.error-message {
+  color: red;
+  font-size: 14px;
+  margin-top: 5px;
 }
 </style>
