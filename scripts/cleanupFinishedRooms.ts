@@ -17,14 +17,13 @@ async function main() {
       );
     }
 
-    // Dekodowanie Base64 i parsowanie JSON-a
+    // Dekodowanie i parsowanie JSON-a
     let serviceAccount: any;
     try {
       if (serviceAccountJson.trim().startsWith("{")) {
-        // Jeśli wygląda na zwykły JSON
+        console.log("Parsowanie JSON-a...");
         serviceAccount = JSON.parse(serviceAccountJson);
       } else {
-        // Jeśli jest zakodowany w Base64
         console.log("Dekodowanie JSON-a z Base64...");
         const decodedJson = Buffer.from(serviceAccountJson, "base64").toString(
           "utf8"
@@ -33,13 +32,15 @@ async function main() {
       }
     } catch (err) {
       throw new Error(
-        "Błąd parsowania JSON-a z FIREBASE_SERVICE_ACCOUNT. Szczegóły: " +
+        "Błąd parsowania JSON-a z FIREBASE_SERVICE_ACCOUNT: " +
           (err instanceof Error ? err.message : String(err))
       );
     }
 
-    // Walidacja kluczowych pól
+    // Walidacja kluczowych pól w JSON-ie
     if (!serviceAccount.private_key || !serviceAccount.client_email) {
+      console.error("Zawartość JSON-a:");
+      console.dir(serviceAccount, { depth: null });
       throw new Error(
         "FIREBASE_SERVICE_ACCOUNT jest niekompletny! Upewnij się, że zawiera 'private_key' i 'client_email'."
       );
@@ -48,7 +49,11 @@ async function main() {
     // Inicjalizacja Firebase
     console.log("Inicjalizacja Firebase...");
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
+      credential: admin.credential.cert({
+        privateKey: serviceAccount.private_key,
+        clientEmail: serviceAccount.client_email,
+        projectId: serviceAccount.project_id,
+      }),
       databaseURL: process.env.FIREBASE_DATABASE_URL, // Ustaw również w sekrecie
     });
 
@@ -70,7 +75,6 @@ async function main() {
       const roomData = child.val();
       const roomKey = child.key;
       if (roomData && roomData.status === "finished" && roomKey) {
-        // Przygotowujemy do usunięcia
         updates[roomKey] = null;
       }
     });
@@ -81,7 +85,6 @@ async function main() {
           Object.keys(updates).length
         } pokoje do usunięcia. Rozpoczynam usuwanie...`
       );
-      // Usuwamy wszystkie "finished" jednym wywołaniem
       await roomsRef.update(updates);
       console.log(`Usunięto pokoje: ${Object.keys(updates).join(", ")}`);
     } else {
