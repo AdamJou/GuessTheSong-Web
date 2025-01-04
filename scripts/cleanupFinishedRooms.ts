@@ -17,8 +17,8 @@ async function main() {
       );
     }
 
-    // Walidacja i dekodowanie JSON-a, jeśli jest zakodowany w Base64
-    let serviceAccount: object;
+    // Dekodowanie Base64 i parsowanie JSON-a
+    let serviceAccount: any;
     try {
       if (serviceAccountJson.trim().startsWith("{")) {
         // Jeśli wygląda na zwykły JSON
@@ -33,7 +33,15 @@ async function main() {
       }
     } catch (err) {
       throw new Error(
-        "FIREBASE_SERVICE_ACCOUNT nie zawiera poprawnego JSON-a! Szczegóły: "
+        "Błąd parsowania JSON-a z FIREBASE_SERVICE_ACCOUNT. Szczegóły: " +
+          (err instanceof Error ? err.message : String(err))
+      );
+    }
+
+    // Walidacja kluczowych pól
+    if (!serviceAccount.private_key || !serviceAccount.client_email) {
+      throw new Error(
+        "FIREBASE_SERVICE_ACCOUNT jest niekompletny! Upewnij się, że zawiera 'private_key' i 'client_email'."
       );
     }
 
@@ -80,7 +88,10 @@ async function main() {
       console.log("Brak pokoi ze statusem 'finished'.");
     }
   } catch (error) {
-    console.error("Błąd podczas czyszczenia pokoi:", error);
+    console.error(
+      "Błąd podczas czyszczenia pokoi:",
+      error instanceof Error ? error.message : String(error)
+    );
     process.exit(1);
   }
 }
