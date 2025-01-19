@@ -9,6 +9,8 @@
         required
       />
       <p v-if="error" class="error-message">{{ error }}</p>
+      <button @click="testUnauthorizedUpdate">Run Test</button>
+
       <button type="submit">Continue</button>
     </form>
   </div>
@@ -20,6 +22,16 @@ import { useRouter } from "vue-router";
 import { getAuth, signInAnonymously } from "firebase/auth"; // Firebase auth
 import { getDatabase, ref as dbRef, set } from "firebase/database"; // Firebase database
 import { useSessionStore } from "@/stores/session"; // Session store
+
+import { simulateUnauthorizedUpdate } from "@/services/gameService";
+
+const testUnauthorizedUpdate = async () => {
+  try {
+    await simulateUnauthorizedUpdate("103745");
+  } catch (error) {
+    console.error("Test failed:", error);
+  }
+};
 
 const router = useRouter();
 const sessionStore = useSessionStore();

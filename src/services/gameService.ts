@@ -4,6 +4,21 @@ import type { Room, Player, Game, Round } from "../types/types";
 import { generateRoomCode } from "@/utils/roomCodeGenerator";
 
 const database = getDatabase();
+
+export const simulateUnauthorizedUpdate = async (roomId: string): Promise<void> => {
+  try {
+    const db = getDatabase();
+    const roomRef = dbRef(db, `rooms/${roomId}`);
+
+    // Przykład nieautoryzowanej aktualizacji
+    await update(roomRef, { status: "hacked" });
+
+    console.log("Update succeeded (this should NOT happen).");
+  } catch (error) {
+    console.error("Unauthorized update failed as expected:", error);
+  }
+};
+
 const updateCurrentGame = async (
   playerId: string,
   roomId: string

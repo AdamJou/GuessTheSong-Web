@@ -14,6 +14,12 @@ export default defineConfig({
       overrideConfigFile: ".eslintrc.cjs", // Wskaż ręcznie plik konfiguracyjny
     }),
   ],
+  esbuild: {
+    target: "esnext", // Supports top-level await
+  },
+  build: {
+    target: "esnext", // Ensures modern syntax support
+  },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
