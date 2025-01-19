@@ -1,156 +1,193 @@
-import { ref, computed, watch } from "vue";
-import type { Room, Game } from "@/types/types"; // dostosuj ścieżkę
+import { ref, computed } from "vue";
+import { getDatabase, ref as dbRef, get, update } from "firebase/database";
+import type { Room, Game } from "@/types/types";
+import { useSessionStore } from "@/stores/session";
+import { useRouter } from "vue-router";
 
 /**
- * Composable do logiki Summary.
- * Oczekuje:
- * - roomData (Ref<Room | null>) - zawiera info o grze/pokoju.
- *
- * Zwraca:
- * - displayedGameId: Ref<string> → ID gry, którą należy pokazać w GameSummary
- * - isLastGame: boolean → czy currentGame to ostatnia gra przy założeniu "playerCount = maxGames"
- * - allGameIds: string[] → lista "game1", "game2", "game3", posortowana
- * - setDisplayedGame(id: string): ustawia ręcznie, którą grę wyświetlamy
+ * Ten composable trzyma *całą logikę*:
+ * - Pobranie rooms/{roomId} (raz),
+ * - Ustalenie justFinishedGame, isLastGame, displayedGameId,
+ * - Tworzenie listy allGameIds,
+ * - Przekierowania do SongSelection,
+ * - SetSongSelection, goHome, itp.
+ * - Dodatkowo: getPlayerNickname (przekształcenie playerId -> nickname)
  */
-export function useSummaryLogic(roomData: { value: Room | null }) {
-  // Pomocnicze: wyciągamy numer "gameX" => X
-  function extractNumber(gameId: string): number {
-    return parseInt(gameId.replace("game", ""));
-  }
+export function useSummaryLogic() {
+  const sessionStore = useSessionStore();
+  const router = useRouter();
 
-  /**
-   * Lista wszystkich gier w danym roomie, posortowana po numerze
-   * np. ["game1", "game2"]
-   */
-  const allGameIds = computed<string[]>(() => {
-    if (!roomData.value) return [];
-    const gamesObj = roomData.value.games || {};
-    const ids = Object.keys(gamesObj); // np. ["game1", "game2"]
-    ids.sort((a, b) => extractNumber(a) - extractNumber(b));
-    return ids;
-  });
+  // computed do store
+  const roomId = computed(() => sessionStore.roomId);
+  const playerId = computed(() => sessionStore.playerId);
+  const players = computed(() => sessionStore.players);
+  const isDj = computed(() => sessionStore.playerId === sessionStore.djId);
+  const isRoomFinished = computed(() => sessionStore.gameStatus === "finished");
 
-  /**
-   * Aktualnie w bazie zdefiniowana gra, np. "game2".
-   */
-  const currentGameId = computed(() => roomData.value?.currentGame || "");
+  // Stan: wczytane dane pokoju
+  const roomData = ref<Room | null>(null);
 
-  /**
-   * Podgląd obiektu Game z roomData (zwraca Game lub undefined).
-   */
-  const currentGameObj = computed<Game | undefined>(() => {
-    if (!roomData.value) return undefined;
-    return roomData.value.games?.[currentGameId.value];
-  });
+  // Czy to ostatnia gra?
+  const isLastGame = ref(false);
 
-  /**
-   * Liczba graczy = maxGames (wg Twojego założenia).
-   */
-  const playerCount = computed(() => {
-    const players = roomData.value?.players || {};
-    return Object.keys(players).length;
-  });
-
-  /**
-   * Numer obecnej gry, np. "game2" -> 2.
-   */
-  const currentGameNumber = computed(() => {
-    return extractNumber(currentGameId.value);
-  });
-
-  /**
-   * Czy ta gra *docelowo* miałaby być ostatnia (bo currentGameNumber == playerCount)?
-   * Uwaga: to nie znaczy, że jest *faktycznie zakończona*.
-   */
-  const isPotentiallyLastGame = computed(() => {
-    return currentGameNumber.value === playerCount.value;
-  });
-
-  /**
-   * Czy obecna gra jest faktycznie zakończona?
-   * - Możesz sprawdzać, czy w "currentGameObj" jest np. "rounds" w statusie completed,
-   *   albo czy game ma status "completed"/"summary" w bazie (w zależności od Twojej struktury).
-   * - Tu załóżmy, że w "roomData.status" może być "summary" lub "finished" =>
-   *   i to oznacza koniec obecnej gry.
-   */
-  const roomStatus = computed(() => roomData.value?.status || "waiting");
-  const currentGameIsFinished = computed(() => {
-    return roomStatus.value === "summary" || roomStatus.value === "finished";
-  });
-
-  /**
-   * Podobnie, w samym "currentGameObj" można mieć "rounds" => sprawdzamy, czy wszystkie completed?
-   * Na potrzeby przykładu wystarczy sprawdzenie "roomStatus".
-   */
-
-  /**
-   * Ostatecznie: "isLastGame" => tak, jeśli jest to gra nr X = playerCount
-   * i jest faktycznie ukończona.
-   */
-  const isLastGame = computed(() => {
-    return isPotentiallyLastGame.value && currentGameIsFinished.value;
-  });
-
-  /**
-   * displayedGameId => gra, którą faktycznie pokazujemy w podsumowaniu.
-   */
+  // Aktualnie wybrana gra do wyświetlenia w summary
   const displayedGameId = ref("");
 
+  // Lista wszystkich gier (np. ["game1","game2"]).
+  const allGameIds = ref<string[]>([]);
+
   /**
-   * Inicjalizacja:
-   * - Jeśli "currentGame" nie jest jeszcze ukończona, to wnioskujemy, że
-   *   należy pokazać poprzednią (gameX-1).
-   * - Jeśli "currentGame" jest ukończona, to pokazujemy ją samą.
+   * Tylko do odczytu "gameData" - obiekt bieżącej gry
+   * z roomData.games[displayedGameId]
    */
-  function initDisplayedGameId() {
-    if (!currentGameId.value) {
-      displayedGameId.value = "";
+  const displayedGameData = computed<Game | null>(() => {
+    if (!roomData.value) return null;
+    if (!displayedGameId.value) return null;
+    return roomData.value.games?.[displayedGameId.value] || null;
+  });
+
+  /**
+   * Główna funkcja do wczytania "rooms/{roomId}" (raz),
+   * ustalenia justFinishedGame => displayedGameId,
+   * sprawdzenia, czy to ostatnia gra => isLastGame,
+   * generowania allGameIds, itp.
+   */
+  async function initSummary() {
+    if (!roomId.value) return;
+    const db = getDatabase();
+    const snapshot = await get(dbRef(db, `rooms/${roomId.value}`));
+    if (!snapshot.exists()) {
+      console.error("Nie odnaleziono pokoju w bazie");
+      return;
+    }
+    const rd = snapshot.val() as Room;
+    roomData.value = rd;
+
+    const justFinished = rd.justFinishedGame || "";
+    if (!justFinished) {
+      console.warn("Brak justFinishedGame - nie wiadomo, co podsumować");
       return;
     }
 
-    // currentGame np. "game2"
-    // Sprawdzamy, czy jest ukończona (finished/summary)
-    if (!currentGameIsFinished.value) {
-      // Nie jest ukończona => weź poprzednią
-      const prevNum = currentGameNumber.value - 1;
-      if (prevNum >= 1) {
-        displayedGameId.value = "game" + prevNum;
-      } else {
-        // Jeśli np. "game1" też nie jest zakończona,
-        // to może i tak musimy pokazać "game1"?
-        displayedGameId.value = currentGameId.value; // fallback
-      }
+    // Wyciągamy numer, np. z "game1" -> 1
+    const justFinishedNum = parseInt(justFinished.replace("game", ""), 10);
+    // Liczba graczy = max liczba gier
+    const playerCount = Object.keys(rd.players || {}).length;
+
+    // Ostatnia gra, jeśli justFinishedNum === playerCount
+    isLastGame.value = justFinishedNum === playerCount;
+
+    // Domyślnie pokazujemy grę, która właśnie się skończyła
+    displayedGameId.value = justFinished;
+
+    // Jeśli ostatnia gra, tworzymy listę ["game1","game2",...]
+    if (isLastGame.value && rd.games) {
+      const ids = Object.keys(rd.games);
+      ids.sort((a, b) => {
+        const na = parseInt(a.replace("game", ""), 10);
+        const nb = parseInt(b.replace("game", ""), 10);
+        return na - nb;
+      });
+      allGameIds.value = ids;
     } else {
-      // currentGame jest ukończona => domyślnie pokazujemy bieżącą
-      displayedGameId.value = currentGameId.value;
+      allGameIds.value = [];
     }
   }
 
-  // Uruchamiamy na starcie
-  initDisplayedGameId();
+  /**
+   * Przełączamy widok z "gameX" na "gameY"
+   */
+  function setDisplayedGame(gid: string) {
+    displayedGameId.value = gid;
+  }
 
   /**
-   * Gdy roomData się zmieni (np. asynchronicznie się wczyta),
-   * ponawiamy logikę.
+   * Zmiana statusu pokoju na "song_selection" (tylko DJ)
    */
-  watch(
-    () => roomData.value,
-    () => {
-      initDisplayedGameId();
+  async function setSongSelection() {
+    if (!roomId.value) return;
+    try {
+      const db = getDatabase();
+      await update(dbRef(db, `rooms/${roomId.value}`), {
+        status: "song_selection",
+      });
+      console.log("Status pokoju -> 'song_selection'");
+    } catch (error) {
+      console.error("Błąd setSongSelection:", error);
     }
-  );
+  }
 
   /**
-   * Możliwość ręcznego przełączenia (jeśli chcemy w UI klikać).
+   * Reakcja na store.gameStatus = "song_selection" -> router push
    */
-  function setDisplayedGame(id: string) {
-    displayedGameId.value = id;
+  function handleGameStatusChange(newStatus: string | null) {
+    if (newStatus === "song_selection") {
+      router.push({
+        name: "SongSelection",
+        params: { roomId: roomId.value },
+      });
+    }
+  }
+
+  /**
+   * Powrót do home - czyścimy players/{playerId}/currentGame, roomId w store
+   */
+  async function goHome() {
+    if (playerId.value) {
+      const db = getDatabase();
+      await update(dbRef(db, `players/${playerId.value}`), {
+        currentGame: "",
+      });
+    }
+    sessionStore.clearRoomId();
+    router.push("/");
+  }
+
+  /**
+   * Funkcja zwracająca nickname gracza (playerId -> nickname).
+   * Używa "roomData.value?.players", jeśli dostępne.
+   */
+  function getPlayerNickname(pId: string): string {
+    const playersObj = players.value || {};
+    return playersObj[pId].name;
+  }
+
+  /**
+   * Przykład użycia getPlayerNickname w composable:
+   * Możesz go potem wywołać w widoku, np. console.log sampleUsage()
+   * lub w innej logice.
+   */
+  function sampleUsage() {
+    if (!displayedGameData.value) return;
+    // Załóżmy, że w displayedGameData mamy "rounds.round1.song.suggestedBy"
+    const firstRoundKey = Object.keys(displayedGameData.value.rounds || {})[0];
+    if (!firstRoundKey) return;
+
+    const roundData = displayedGameData.value.rounds[firstRoundKey];
+    const suggestedById = roundData.song.suggestedBy;
+    const nick = getPlayerNickname(suggestedById);
+    console.log("Pierwsza runda zaproponowana przez:", nick);
   }
 
   return {
+    // Wartości reaktywne
+    roomId,
+    isDj,
+    isRoomFinished,
+    roomData,
+    isLastGame,
     displayedGameId,
-    isLastGame, // Pokazuje, że "gameX" jest już faktycznie ostatnia i ukończona
     allGameIds,
+    displayedGameData,
+
+    // Metody
+    initSummary,
     setDisplayedGame,
+    setSongSelection,
+    handleGameStatusChange,
+    goHome,
+
+    getPlayerNickname,
+    sampleUsage,
   };
 }
