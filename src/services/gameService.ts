@@ -4,7 +4,15 @@ import type { Room, Player, Game, Round } from "../types/types";
 import { generateRoomCode } from "@/utils/roomCodeGenerator";
 
 const database = getDatabase();
-
+const updateCurrentGame = async (
+  playerId: string,
+  roomId: string
+): Promise<void> => {
+  const db = getDatabase();
+  const playerRef = dbRef(db, `players/${playerId}`);
+  await update(playerRef, { currentGame: roomId });
+  console.log(`Updated currentGame for player ${playerId} to room ${roomId}`);
+};
 export const createGame = async (): Promise<string> => {
   const sessionStore = useSessionStore();
 
@@ -13,6 +21,9 @@ export const createGame = async (): Promise<string> => {
   }
 
   const roomId = generateRoomCode(); // 6-cyfrowy kod
+
+  // Aktualizacja currentGame
+  await updateCurrentGame(sessionStore.playerId, roomId);
 
   const newPlayer: Player = {
     id: sessionStore.playerId,
@@ -49,6 +60,9 @@ export const joinGame = async (roomId: string): Promise<void> => {
   if (!sessionStore.playerId || !sessionStore.nickname) {
     throw new Error("Player ID or nickname is missing.");
   }
+
+  // Aktualizacja currentGame
+  await updateCurrentGame(sessionStore.playerId, roomId);
 
   const roomRef = dbRef(database, `rooms/${roomId}`);
   const snapshot = await get(roomRef);
