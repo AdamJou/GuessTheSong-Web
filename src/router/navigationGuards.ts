@@ -30,7 +30,7 @@ export const navigationGuard = async (
   }
 
   // Obsługa przypadku: brak playerId (użytkownik musi najpierw ustawić nick)
-  if (!playerId) {
+  if (!playerId || !nickname) {
     if (to.name !== "NicknameInput") {
       console.log("Redirecting to NicknameInput.");
       return next({ name: "NicknameInput" });

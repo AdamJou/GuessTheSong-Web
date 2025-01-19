@@ -23,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import { useSessionStore } from "@/stores/session";
 
 // 1) Pobieramy store
@@ -41,6 +41,13 @@ const sortedPlayers = computed(() => {
   playersArray.sort((a, b) => b.score - a.score);
 
   return playersArray;
+});
+onMounted(() => {
+  console.log(
+    "[Scoreboard] onMounted => wołamy sessionStore.subscribeToPlayers()"
+  );
+  sessionStore.subscribeToPlayers();
+  // Teraz store powinien włączyć nasłuchiwanie /players
 });
 </script>
 
