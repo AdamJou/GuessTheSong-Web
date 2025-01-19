@@ -135,7 +135,9 @@ const goBackToSongSelection = async () => {
         alert("All games have finished! The session is over.");
         await update(dbRef(db, roomPath), {
           status: "finished", // Oznaczamy w bazie, że rozgrywka się skończyła
+          justFinishedGame: currentGame.value,
         });
+        console.log("=>", currentGame.value);
         router.push({ name: "Summary", params: { roomId: roomId.value } });
         return;
       }
@@ -152,6 +154,7 @@ const goBackToSongSelection = async () => {
       await update(dbRef(db, roomPath), {
         currentGame: nextGameId,
         currentRound: "round1",
+        justFinishedGame: "game" + currentGameNumber,
       });
 
       // 3) Wybieramy nowego DJ-a:

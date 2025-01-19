@@ -13,6 +13,7 @@ app.use(createPinia());
 
 const sessionStore = useSessionStore();
 await sessionStore.initializeSession();
+
 app.use(router);
 
 app.mount("#app");

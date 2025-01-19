@@ -191,23 +191,89 @@ export const useSessionStore = defineStore("session", {
 
     // Subskrypcja graczy i DJ-a w pokoju.
     subscribeToPlayers() {
-      if (!this.roomId) return;
+      // 1) Najpierw sprawdź, czy w ogóle jest roomId
+      if (!this.roomId) {
+        console.log(
+          "[subscribeToPlayers] Brak this.roomId => subskrypcja przerwana."
+        );
+        return;
+      }
+
+      console.log(
+        "[subscribeToPlayers] URUCHAMIAM subskrypcję players, roomId=",
+        this.roomId
+      );
+
+      // 2) Odpinamy ewentualną starą subskrypcję
       this.unsubscribePlayers();
 
+      // 3) Tworzymy referencje do /players i /djId w danym roomie
       const db = getDatabase();
-      const playersRef = dbRef(db, `rooms/${this.roomId}/players`);
-      const djRef = dbRef(db, `rooms/${this.roomId}/djId`);
+      const playersPath = `rooms/${this.roomId}/players`;
+      const djPath = `rooms/${this.roomId}/djId`;
 
-      const playersCallback = onValue(playersRef, (snapshot) => {
-        this.players = snapshot.exists() ? snapshot.val() : {};
-      });
+      console.log(
+        `[subscribeToPlayers] playersRef = ${playersPath}`,
+        `djRef = ${djPath}`
+      );
 
-      const djCallback = onValue(djRef, (snapshot) => {
-        console.log("DJ snapshot", snapshot.val());
-        this.djId = snapshot.exists() ? snapshot.val() : null;
-      });
+      const playersRef = dbRef(db, playersPath);
+      const djRef = dbRef(db, djPath);
 
+      // 4) Callback do playersRef
+      const playersCallback = onValue(
+        playersRef,
+        (snapshot) => {
+          // Sukces – dostaliśmy dane
+          console.log(
+            "[playersCallback] onValue SUKCES, snapshot =",
+            snapshot.val()
+          );
+          if (snapshot.exists()) {
+            this.players = snapshot.val();
+            console.log(
+              "[playersCallback] Zaktualizowano this.players =>",
+              this.players
+            );
+          } else {
+            this.players = {};
+            console.log(
+              "[playersCallback] snapshot nie istnieje => players = {}"
+            );
+          }
+        },
+        (error) => {
+          // Błąd – logujemy go
+          console.error("[playersCallback] BŁĄD onValue playersRef:", error);
+        }
+      );
+
+      // 5) Callback do djRef
+      const djCallback = onValue(
+        djRef,
+        (snapshot) => {
+          console.log(
+            "[djCallback] onValue SUKCES, djId snapshot =",
+            snapshot.val()
+          );
+          if (snapshot.exists()) {
+            this.djId = snapshot.val();
+            console.log("[djCallback] this.djId =", this.djId);
+          } else {
+            this.djId = null;
+            console.log("[djCallback] snapshot nie istnieje => djId = null");
+          }
+        },
+        (error) => {
+          console.error("[djCallback] BŁĄD onValue djRef:", error);
+        }
+      );
+
+      // 6) Przechowujemy referencje, by móc je odpiąć (unsubscribe)
       this._playersSubUnsub = () => {
+        console.log(
+          "[unsubscribePlayers] Wywołane => odpinam playersRef i djRef"
+        );
         playersCallback();
         djCallback();
       };

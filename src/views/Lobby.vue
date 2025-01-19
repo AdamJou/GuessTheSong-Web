@@ -14,19 +14,27 @@
     <button v-if="isDj" @click="handleStartGame" :disabled="!canStartGame">
       Start Game
     </button>
+    <button v-if="isDj" @click="closeRoom" class="danger-btn">
+      Zakończ grę i usuń pokój
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, watch, onMounted } from "vue";
+import { computed, watch, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { createGameAndRound } from "@/services/gameService";
 import { useSessionStore } from "@/stores/session";
 import Status from "@/views/Status.vue";
+import { useCloseRoom } from "@/composables/useCloseRoom";
+import { useRoomWatcher } from "@/composables/useCloseRoomWatcher";
+// Wyciągamy logikę "zamknij pokój"
 
 // Router i session store
 const router = useRouter();
 const sessionStore = useSessionStore();
+const { closeRoom } = useCloseRoom();
+const { watchRoomRemoved, unwatchRoomRemoved } = useRoomWatcher();
 
 // Komputowane właściwości z session store
 const roomId = computed(() => sessionStore.roomId);
@@ -75,8 +83,12 @@ const handleStartGame = async () => {
 // Główna logika w onMounted
 onMounted(async () => {
   await ensurePlayerInRoom(); // Upewnij się, że gracz jest w pokoju
+  watchRoomRemoved();
 });
 
+onUnmounted(() => {
+  unwatchRoomRemoved();
+});
 // Funkcja reagująca na zmianę statusu gry
 const handleGameStatusChange = (status: string | null) => {
   if (!status) return;
