@@ -1,7 +1,6 @@
 <template>
   <div class="voting-view">
     <h1>Voting View {{ currentRound }}</h1>
-
     <!-- Display message while waiting for DJ -->
     <p v-if="!currentSong">Waiting for DJ to set a song...</p>
 
@@ -12,7 +11,7 @@
       <p><strong>Song Title:</strong> {{ currentSong.songTitle }}</p>
     </div>
     <!-- Voting Section -->
-    <div v-if="currentSong.songId && !hasVoted">
+    <div v-if="currentSong && currentSong.songId && !hasVoted">
       <h2>Vote for who you think suggested this song:</h2>
       <ul>
         <li
@@ -120,6 +119,7 @@ const subscribeToSong = () => {
 
   songUnsubscribe = onValue(songRef, (snapshot) => {
     currentSong.value = snapshot.exists() ? snapshot.val() : null;
+    console.log("Current Song:", currentSong.value);
   });
 };
 
