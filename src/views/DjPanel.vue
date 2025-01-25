@@ -1,10 +1,8 @@
 <template>
   <div class="dj-panel">
-    <h1>DJ Panel</h1>
-    <p>
-      Room ID: <strong>{{ roomId }}</strong>
-    </p>
-    <h2>Players' Songs</h2>
+    <h1>Panel DJ</h1>
+
+    <h2>Utwory graczy</h2>
 
     <ul v-if="unplayedSongs.length > 0">
       <li
@@ -14,21 +12,20 @@
         class="song-item"
         :class="{ selected: selectedPlayerId === playerId }"
       >
-        <strong>Player ID:</strong> {{ playerId }}<br />
-        <strong>Song ID:</strong> {{ song.songId }}<br />
-        <strong>Song Title:</strong> {{ song.songTitle }}<br />
-        <strong>Was Played:</strong> {{ song.wasPlayed ? "Yes" : "No" }}
+        {{ song.songTitle }}<br />
+        <p class="selected-by">
+          Wybrany przez:
+          <i> {{ getPlayerNickname(playerId) }}</i>
+        </p>
       </li>
     </ul>
 
     <p v-else>No unplayed songs available.</p>
-    <div v-if="selectedSong">
-      <h3>Selected Song</h3>
-      <p><strong>Song ID:</strong> {{ selectedSong.songId }}</p>
-      <p><strong>Song Title:</strong> {{ selectedSong.songTitle }}</p>
-      <p><strong>Suggested By:</strong> {{ selectedSong.suggestedBy }}</p>
-      <button @click="submitSelectedSong">Submit Song to Current Round</button>
-    </div>
+    <Transition name="bounce">
+      <div v-if="selectedSong">
+        <button @click="submitSelectedSong" class="btn-submit">Wybierz</button>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -44,16 +41,24 @@ import {
 import { useSessionStore } from "@/stores/session";
 import { getDatabase, ref as dbRef, onValue, update } from "firebase/database";
 import { PlayerSong, RoundSong } from "@/types/types";
+import { useLoadingStore } from "@/stores/useLoadingStore";
 import { useRouter } from "vue-router";
 const router = useRouter();
 // Session store for current session details
 const sessionStore = useSessionStore();
+const loadingStore = useLoadingStore();
 const roomId = sessionStorage.getItem("roomId") as string;
 const currentGame = computed(() => sessionStore.currentGame);
+const players = computed(() => sessionStore.players);
 const currentRound = computed(() => sessionStore.currentRound);
 const allSongsPlayed = ref(false);
 // Reactive variable for storing player songs and selected song
 const playerSongs = ref<Record<string, PlayerSong>>({});
+
+function getPlayerNickname(pId: string): string {
+  const playersObj = players.value || {};
+  return playersObj[pId].name;
+}
 
 const selectedPlayerId = ref<string | null>(null);
 const selectedSong = ref<{
@@ -142,6 +147,7 @@ const submitSelectedSong = async () => {
     return;
   }
 
+  loadingStore.startLoading();
   try {
     const db = getDatabase();
     const roundRef = dbRef(
@@ -167,6 +173,8 @@ const submitSelectedSong = async () => {
   } catch (error) {
     console.error("Error submitting song to current round:", error);
     alert("Failed to submit the song. Please try again.");
+  } finally {
+    loadingStore.stopLoading();
   }
 };
 </script>
@@ -175,6 +183,7 @@ const submitSelectedSong = async () => {
 .dj-panel {
   text-align: center;
   margin-top: 50px;
+  color: white;
 }
 
 ul {
@@ -193,11 +202,36 @@ ul {
 .song-item.selected {
   background-color: #f0f0f0;
   border-color: #007bff;
+  color: #2c3e50;
 }
 
 button {
-  margin-top: 20px;
-  padding: 10px 20px;
+  padding: 0.875rem 1.875rem; /* 14px 30px */
+  font-size: 1.125rem; /* 18px */
+  text-transform: uppercase;
+  border-radius: 0.9375rem; /* 15px */
+  border: 0.25rem solid; /* 4px */
+  transition: all 0.3s ease-in-out;
+  letter-spacing: 2px;
+  position: relative;
   cursor: pointer;
+  margin-top: 1rem;
+}
+.btn-submit {
+  color: #fff;
+  background: linear-gradient(145deg, #ffcc00, #ff9900);
+  border-color: #ff6600;
+  box-shadow: 0 0.375rem 0 #cc5200, 0 0.625rem 1.25rem rgba(0, 0, 0, 0.3);
+  text-shadow: 2px 2px 0 #cc5200;
+}
+
+.btn-submit:hover {
+  background: linear-gradient(145deg, #ffdd33, #ffbb00);
+  box-shadow: 0 0.25rem 0 #cc5200, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
+}
+.selected-by,
+i {
+  font-size: 14px;
+  color: #2c3e50;
 }
 </style>

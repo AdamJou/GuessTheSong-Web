@@ -1,16 +1,13 @@
 <template>
   <div class="song-search">
-    <h2>Song Selection</h2>
-
-    <!-- 1) Ładowanie danych o piosenkach z Firebase -->
     <div v-if="fetchingPlayerSongs">
       <p>Loading player songs...</p>
     </div>
 
     <!-- 2) Gracz ma już piosenkę w bazie -->
     <div v-else-if="hasSubmitted">
-      <h3>Submitted Song</h3>
-      <p><strong>Title:</strong> {{ playerSongs[playerId].songTitle }}</p>
+      <h3>Wybrany utwór</h3>
+      <p>{{ playerSongs[playerId].songTitle }}</p>
       <!-- Możesz tu dodać informację, że piosenki nie da się zmienić itp. -->
     </div>
 
@@ -20,10 +17,12 @@
         <input
           v-model="query"
           type="text"
-          placeholder="Enter song title..."
+          placeholder="Wprowadź tytuł utworu..."
           @keyup.enter="search"
         />
-        <button @click="search" :disabled="loading">Search</button>
+        <button @click="search" :disabled="loading" class="btn-search">
+          Szukaj
+        </button>
       </div>
 
       <p v-if="error" class="error">{{ error }}</p>
@@ -36,22 +35,21 @@
           :key="video.id.videoId"
           @click="selectSong(video)"
           class="video-item"
+          :class="{
+            selected:
+              selectedSong && selectedSong.id.videoId === video.id.videoId,
+          }"
         >
           <img :src="video.snippet.thumbnails.default.url" alt="Thumbnail" />
-          <div>
-            <p>
-              <strong>{{ video.snippet.title }}</strong>
-            </p>
-            <p>{{ video.snippet.channelTitle }}</p>
+          <div class="title">
+            <p>{{ video.snippet.title }} {{ video.snippet.channelTitle }}</p>
           </div>
         </li>
       </ul>
 
       <!-- Informacja o wybranym utworze i przycisk zatwierdzania -->
       <div v-if="selectedSong">
-        <h3>Selected Song</h3>
-        <p><strong>Title:</strong> {{ selectedSong.snippet.title }}</p>
-        <button @click="submitSelectedSong">Submit</button>
+        <button @click="submitSelectedSong">Zatwierdź</button>
       </div>
     </div>
   </div>
@@ -216,6 +214,7 @@ async function submitSelectedSong() {
 .search-bar {
   display: flex;
   justify-content: center;
+  align-items: center;
   gap: 10px;
   margin-bottom: 20px;
 }
@@ -225,11 +224,27 @@ input {
   font-size: 16px;
   width: 300px;
 }
-
 button {
-  padding: 10px 20px;
-  font-size: 16px;
+  padding: 0.5rem 1.875rem; /* 14px 30px */
+  font-size: 1rem; /* 18px */
+  text-transform: uppercase;
+  border-radius: 0.9375rem; /* 15px */
+  border: 0.25rem solid; /* 4px */
+  transition: all 0.3s ease-in-out;
+  letter-spacing: 2px;
+  position: relative;
   cursor: pointer;
+}
+.btn-search {
+  color: #fff;
+  background: linear-gradient(145deg, #ffcc00, #ff9900);
+  border-color: #ff6600;
+  box-shadow: 0 0.375rem 0 #cc5200, 0 0.625rem 1.25rem rgba(0, 0, 0, 0.3);
+  text-shadow: 2px 2px 0 #cc5200;
+}
+.btn-search:hover {
+  background: linear-gradient(145deg, #ffdd33, #ffbb00);
+  box-shadow: 0 0.25rem 0 #cc5200, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
 }
 
 ul {
@@ -242,20 +257,28 @@ ul {
   display: flex;
   align-items: center;
   gap: 10px;
+  border-radius: 10px;
   cursor: pointer;
   padding: 10px;
   border: 1px solid #ccc;
   margin-bottom: 10px;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s ease;
 }
 
+.video-item.selected {
+  background-color: #007bff;
+  color: white;
+  border-radius: 5px;
+}
 .video-item:hover {
-  background-color: #f0f0f0;
+  background-color: #ff9900;
 }
 
 .video-item img {
-  width: 60px;
-  height: 60px;
+  width: 80px;
+  height: auto; /* Maintain aspect ratio */
+  aspect-ratio: 4 / 3; /* Set the desired aspect ratio */
+  object-fit: cover; /* Ensure content fills the box while maintaining the ratio */
 }
 
 .error {

@@ -1,18 +1,20 @@
 <template>
   <div class="voting-view">
-    <h1>Voting View {{ currentRound }}</h1>
+    <h1>{{ currentRound }}</h1>
     <!-- Display message while waiting for DJ -->
-    <p v-if="!currentSong">Waiting for DJ to set a song...</p>
+    <p v-if="!currentSong?.songId" class="blink">DJ wybiera utwór...</p>
 
     <!-- Display song details once available -->
-    <div v-else>
-      <h2>Current Song</h2>
-      <p><strong>Song ID:</strong> {{ currentSong.songId }}</p>
-      <p><strong>Song Title:</strong> {{ currentSong.songTitle }}</p>
-    </div>
+    <transition name="fade">
+      <div v-if="currentSong?.songId">
+        <p>
+          Tytuł: <strong>{{ currentSong.songTitle }}</strong>
+        </p>
+      </div>
+    </transition>
     <!-- Voting Section -->
     <div v-if="currentSong && currentSong.songId && !hasVoted">
-      <h2>Vote for who you think suggested this song:</h2>
+      <h3>Zagłosuj na gracza</h3>
       <ul>
         <li
           v-for="(player, playerId) in otherPlayers"
@@ -23,7 +25,12 @@
           {{ player.name }}
         </li>
       </ul>
-      <button @click="submitVote" :disabled="!selectedPlayer">
+      <button
+        @click="submitVote"
+        :disabled="!selectedPlayer"
+        :class="{ disabled: !selectedPlayer }"
+        class="btn-submit"
+      >
         Submit Vote
       </button>
     </div>
@@ -31,24 +38,18 @@
     <!-- After Voting -->
     <div v-if="hasVoted">
       <p>
-        You have voted for: <strong>{{ votedPlayer }}</strong>
+        Zagłosowałeś na <strong class="voted-on">{{ votedPlayer }}</strong>
       </p>
     </div>
 
     <!-- Display Real-Time Votes -->
-    <div v-if="hasVoted">
-      <h2>Votes So Far</h2>
-      <ul>
-        <li v-for="(votedFor, voter) in votes" :key="voter">
-          {{ getPlayerName(voter) }} voted for {{ getPlayerName(votedFor) }}
-        </li>
-      </ul>
-    </div>
+    <VotingStatus v-if="hasVoted" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from "vue";
+import VotingStatus from "@/components/VotingStatus.vue";
 import { getDatabase, ref as dbRef, onValue, update } from "firebase/database";
 import { useSessionStore } from "@/stores/session";
 import { useRouter } from "vue-router";
@@ -186,6 +187,7 @@ onBeforeUnmount(() => {
 .voting-view {
   text-align: center;
   margin-top: 50px;
+  color: white;
 }
 
 h1 {
@@ -233,6 +235,87 @@ button {
 
 button:disabled {
   background-color: #ccc;
+  cursor: not-allowed;
+}
+
+@keyframes blink {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Klasa dla migotania */
+.blink {
+  animation: blink 1.5s infinite ease-in-out;
+}
+.fade-enter-active {
+  animation: fadeIn 0.8s ease-in-out;
+}
+.fade-leave-active {
+  animation: fadeOut 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+strong {
+  color: #ff9900;
+  font-size: larger;
+}
+.voted-on {
+  color: #ffcc00;
+  font-size: larger;
+}
+button {
+  padding: 0.875rem 1.875rem; /* 14px 30px */
+  font-size: 1.125rem; /* 18px */
+  text-transform: uppercase;
+  border-radius: 0.9375rem; /* 15px */
+  border: 0.25rem solid; /* 4px */
+  transition: all 0.3s ease-in-out;
+  letter-spacing: 2px;
+  position: relative;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+.btn-submit {
+  color: #fff;
+  background: linear-gradient(145deg, #ffcc00, #ff9900);
+  border-color: #ff6600;
+  box-shadow: 0 0.375rem 0 #cc5200, 0 0.625rem 1.25rem rgba(0, 0, 0, 0.3);
+  text-shadow: 2px 2px 0 #cc5200;
+}
+
+.btn-submit:hover {
+  background: linear-gradient(145deg, #ffdd33, #ffbb00);
+  box-shadow: 0 0.25rem 0 #cc5200, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
+}
+.disabled {
+  opacity: 0.3;
   cursor: not-allowed;
 }
 </style>

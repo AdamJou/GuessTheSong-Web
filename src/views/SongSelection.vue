@@ -1,12 +1,11 @@
 <template>
   <div class="song-selection">
-    <h1>Song Selection</h1>
-    <p>
-      Your Room Code: <strong>{{ roomId }}</strong>
-    </p>
-    <SongSearch />
+    <section>
+      <h1>Wybieranie utworu</h1>
 
-    <!-- FORMULARZ WYBORU PIOSENKI -->
+      <SongSearch />
+
+      <!-- FORMULARZ WYBORU PIOSENKI
     <form @submit.prevent="submitSong" v-if="!hasSubmitted">
       <div>
         <label for="songId">Song ID:</label>
@@ -30,27 +29,49 @@
       </div>
       <button type="submit" :disabled="!canSubmit">Submit</button>
     </form>
-    <!-- OBSZAR INFORMUJĄCY, ŻE WSZYSCY GRACZE ZŁOŻYLI PIOSENKI -->
-    <div v-if="allPlayersSubmitted">
-      <p>
-        Everyone has submitted their songs! Waiting for the game to start...
-      </p>
-      <button v-if="isDj" @click="handleStartGame">Start Game</button>
-    </div>
+     -->
+      <!-- OBSZAR INFORMUJĄCY, ŻE WSZYSCY GRACZE ZŁOŻYLI PIOSENKI -->
+      <Transition name="fade" appear>
+        <div v-if="allPlayersSubmitted">
+          <p style="color: white; margin-top: 1rem">
+            Każdy wybrał już swój utwór, możesz teraz rozpocząć grę!
+          </p>
+          <button v-if="isDj" @click="handleStartGame" class="btn-start">
+            Start
+          </button>
+        </div>
+      </Transition>
 
-    <!-- STATUSY GRACZY ICH GOTOWOŚCI (Submitted / Not Submitted) -->
-    <div>
-      <h2>Player Status:</h2>
-      <ul v-if="players && Object.keys(players).length > 0">
-        <li v-for="(player, id) in players" :key="id">
-          {{ player.name }} -
-          <span :class="{ submitted: !!playerSongs[id] }">
-            {{ playerSongs[id] ? "Submitted" : "Not Submitted" }}
-          </span>
-        </li>
-      </ul>
-      <p v-else>Loading player statuses...</p>
-    </div>
+      <!-- STATUSY GRACZY ICH GOTOWOŚCI (Submitted / Not Submitted) -->
+      <div class="players-grid">
+        <ul
+          v-if="players && Object.keys(players).length > 0"
+          class="player-list"
+        >
+          <li v-for="(player, id) in players" :key="id" class="player-item">
+            <div class="player-name">
+              {{ player.name }}
+            </div>
+            <div class="player-status">
+              <font-awesome-icon
+                :icon="['fas', 'check']"
+                v-if="playerSongs[id]"
+                class="submitted-icon"
+                title="Submitted"
+              />
+
+              <font-awesome-icon
+                v-else
+                :icon="['fas', 'xmark']"
+                class="not-submitted-icon"
+                title="Not submitted"
+              />
+            </div>
+          </li>
+        </ul>
+        <p v-else>Loading player statuses...</p>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -181,6 +202,7 @@ watch(
 <style scoped>
 .song-selection {
   text-align: center;
+
   margin-top: 50px;
 }
 
@@ -201,13 +223,106 @@ input {
 }
 
 button {
-  padding: 10px 20px;
-  font-size: 16px;
+  padding: 0.875rem 1.875rem; /* 14px 30px */
+  font-size: 1.125rem; /* 18px */
+  text-transform: uppercase;
+  border-radius: 0.9375rem; /* 15px */
+  border: 0.25rem solid; /* 4px */
+  transition: all 0.3s ease-in-out;
+  letter-spacing: 2px;
+  position: relative;
   cursor: pointer;
+  margin-top: 1rem;
+}
+.btn-start {
+  color: #fff;
+  background: linear-gradient(145deg, #ffcc00, #ff9900);
+  border-color: #ff6600;
+  box-shadow: 0 0.375rem 0 #cc5200, 0 0.625rem 1.25rem rgba(0, 0, 0, 0.3);
+  text-shadow: 2px 2px 0 #cc5200;
 }
 
+.btn-start:hover {
+  background: linear-gradient(145deg, #ffdd33, #ffbb00);
+  box-shadow: 0 0.25rem 0 #cc5200, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
+}
 .submitted {
   color: green;
   font-weight: bold;
+}
+ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+}
+
+.players-grid {
+  max-width: 900px;
+  margin: 0 auto;
+  color: #fff;
+  /* For demonstration; remove if you have a global font set */
+  font-family: "Bungee", sans-serif;
+}
+
+/* The flexbox container */
+.player-list {
+  list-style: none;
+  padding: 1rem;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between; /* Adjust layout for space distribution */
+}
+
+/* Individual player items */
+.player-list > * {
+  flex: 1 1 calc(33.33% - 1rem); /* 3 items per row with gap spacing */
+  min-width: min-content;
+  max-width: 100%; /* Prevent items from growing beyond their container */
+  box-sizing: border-box;
+}
+
+.player-item {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  color: #bcbfc2;
+  font-weight: normal;
+  padding: 0.5rem 1rem;
+  gap: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Player info styles */
+.player-name {
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.player-status {
+  font-size: 1.25rem; /* icon size */
+}
+
+/* Icons for submitted / not submitted */
+.submitted-icon {
+  color: #00ff99; /* green-ish */
+}
+
+.not-submitted-icon {
+  color: #ff5555; /* red-ish */
+}
+@media (max-width: 768px) {
+  .player-list > * {
+    flex: 1 1 calc(50% - 1rem);
+  }
+}
+
+@media (max-width: 480px) {
+  .player-list > * {
+    flex: 1 1 100%;
+  }
 }
 </style>

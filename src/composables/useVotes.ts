@@ -12,6 +12,7 @@ export function useVotes() {
   const players = computed<Players>(() => sessionStore.players);
   const playerId = computed(() => sessionStore.playerId);
 
+  // Zachowujemy obecny typ, aby inne komponenty nie zgłaszały błędów
   const votes = ref<Record<string, string>>({});
   const hasVoted = ref(false);
   const votedPlayer = ref<string | null>(null);
@@ -27,15 +28,23 @@ export function useVotes() {
       `rooms/${roomId.value}/games/${currentGame.value}/rounds/${currentRound.value}/votes`
     );
 
-    unsubscribeVotes = onValue(votesRef, (snapshot) => {
-      const voteData = snapshot.val() || {};
-      votes.value = voteData;
+    // Usunięcie poprzedniej subskrypcji, jeśli istnieje
+    unsubscribeFromVotes();
 
-      // Check if the current player has already voted
-      if (playerId.value && voteData[playerId.value]) {
+    unsubscribeVotes = onValue(votesRef, (snapshot) => {
+      const voteData = snapshot.val();
+
+      // Ustawienie wartości głosów - jeśli brak danych, ustawiamy pusty obiekt
+      votes.value = voteData && typeof voteData === "object" ? voteData : {};
+
+      // Sprawdzenie, czy obecny gracz już zagłosował
+      if (playerId.value && votes.value[playerId.value]) {
         hasVoted.value = true;
         votedPlayer.value =
-          players.value?.[voteData[playerId.value]]?.name || "Unknown";
+          players.value?.[votes.value[playerId.value]]?.name || "Unknown";
+      } else {
+        hasVoted.value = false;
+        votedPlayer.value = null;
       }
     });
   };
@@ -47,25 +56,32 @@ export function useVotes() {
     }
   };
 
+  // Monitorujemy zmiany w grze i rundzie, natychmiast subskrybujemy do głosów
   watch(
     [currentGame, currentRound],
     () => {
-      unsubscribeFromVotes();
       subscribeToVotes();
     },
     { immediate: true }
   );
 
+  // Resetowanie danych głosowania
   const resetVotes = () => {
     hasVoted.value = false;
     votedPlayer.value = null;
+    votes.value = {};
   };
+
+  // Pobieranie nazwy gracza na podstawie ID
+  const getPlayerName = (id: string): string =>
+    players.value?.[id]?.name || "Unknown";
 
   return {
     votes,
     hasVoted,
     votedPlayer,
-    getPlayerName: (id: string) => players.value?.[id]?.name || "Unknown",
+    getPlayerName,
     resetVotes,
+    unsubscribeFromVotes,
   };
 }

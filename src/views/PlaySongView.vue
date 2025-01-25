@@ -1,29 +1,21 @@
 <template>
   <div class="play-song-view" v-if="roomId">
-    <h1>Play Song</h1>
+    <h1>Obecnie odtwarzamy:</h1>
 
     <!-- Display current song -->
     <div v-if="currentSong">
-      <h2>Current Song</h2>
-      <p><strong>Song ID:</strong> {{ currentSong.songId }}</p>
-      <p><strong>Song Title:</strong> {{ currentSong.songTitle }}</p>
+      <strong>{{ currentSong.songTitle }}</strong>
       <YouTubePlayer v-if="currentSong.songId" :songId="currentSong.songId" />
     </div>
-
-    <!-- Display "Votes So Far" -->
-    <div v-if="Object.keys(votes).length > 0">
-      <h2>Votes So Far</h2>
-      <ul>
-        <li v-for="(votedFor, voter) in votes" :key="voter">
-          {{ getPlayerName(voter) }} voted for {{ getPlayerName(votedFor) }}
-        </li>
-      </ul>
+    <div v-if="allPlayersHaveVoted">
+      <button @click="goBackToSongSelection" class="btn-submit">
+        Wybierz następny utwór
+      </button>
     </div>
+    <!-- Display "Votes So Far" -->
+    <VotingStatus />
 
     <!-- Display button if all players have voted -->
-    <div v-if="allPlayersHaveVoted">
-      <button @click="goBackToSongSelection">Go Back to Song Selection</button>
-    </div>
   </div>
 </template>
 <script setup lang="ts">
@@ -40,6 +32,7 @@ import { useVotes } from "@/composables/useVotes";
 import { useRouter } from "vue-router";
 import { useScoreCalculator } from "@/composables/useScoreCalculator";
 import YouTubePlayer from "@/components/YouTubePlayer.vue";
+import VotingStatus from "@/components/VotingStatus.vue";
 
 const { calculateAndSaveScores } = useScoreCalculator();
 
@@ -57,6 +50,13 @@ const currentSong = ref<{ songId: string; songTitle: string } | null>(null);
 // Use the reusable useVotes composable
 const { votes, getPlayerName } = useVotes();
 
+const hasValidVotes = computed(() => {
+  return (
+    Object.values(votes.value).some((votedForId) => {
+      return getPlayerName(votedForId) === "Unknown";
+    }) === false
+  ); // Jeśli żaden głos nie zawiera "Unknown"
+});
 // Check if all players have voted
 const allPlayersHaveVoted = computed(() => {
   const totalPlayers = Object.keys(players.value || {}).filter(
@@ -311,6 +311,7 @@ const goBackToSongSelection = async () => {
 .play-song-view {
   text-align: center;
   margin-top: 50px;
+  color: white;
 }
 
 h1 {
@@ -325,5 +326,33 @@ p {
 h2 {
   margin-top: 20px;
   font-size: 1.5rem;
+}
+strong {
+  color: #ff9900;
+  font-size: larger;
+}
+button {
+  padding: 0.875rem 1.875rem; /* 14px 30px */
+  font-size: 1.125rem; /* 18px */
+  text-transform: uppercase;
+  border-radius: 0.9375rem; /* 15px */
+  border: 0.25rem solid; /* 4px */
+  transition: all 0.3s ease-in-out;
+  letter-spacing: 2px;
+  position: relative;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+.btn-submit {
+  color: #fff;
+  background: linear-gradient(145deg, #ffcc00, #ff9900);
+  border-color: #ff6600;
+  box-shadow: 0 0.375rem 0 #cc5200, 0 0.625rem 1.25rem rgba(0, 0, 0, 0.3);
+  text-shadow: 2px 2px 0 #cc5200;
+}
+
+.btn-submit:hover {
+  background: linear-gradient(145deg, #ffdd33, #ffbb00);
+  box-shadow: 0 0.25rem 0 #cc5200, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
 }
 </style>

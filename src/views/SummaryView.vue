@@ -4,7 +4,6 @@
   </div>
   <div v-else>
     <Scoreboard />
-    <Status />
 
     <!-- Jeśli to ostatnia gra (isLastGame), pokaż przyciski do zmiany game -->
     <div v-if="isLastGame" class="last-game-nav">
@@ -29,15 +28,17 @@
 
     <!-- Kontrolki DJ-a do next fazy -->
     <div v-if="isDj && !isRoomFinished" class="dj-controls">
-      <button @click="setSongSelection">
-        Rozpocznij kolejną fazę (song_selection)
+      <button @click="setSongSelection" class="btn-start">
+        Rozpocznij kolejną grę
       </button>
     </div>
 
     <!-- Kiedy status=finished -->
     <div v-if="isRoomFinished" class="finished-controls">
       <p>Rozgrywka się zakończyła!</p>
-      <button @click="goHome">Powrót do strony głównej</button>
+      <button @click="goHome" class="btn-start">
+        Powrót do strony głównej
+      </button>
     </div>
   </div>
 </template>
@@ -96,5 +97,30 @@ watch(
 .game-buttons .active {
   background-color: #ccc;
   font-weight: bold;
+}
+
+button {
+  padding: 0.875rem 1.875rem; /* 14px 30px */
+  font-size: 1.125rem; /* 18px */
+  text-transform: uppercase;
+  border-radius: 0.9375rem; /* 15px */
+  border: 0.25rem solid; /* 4px */
+  transition: all 0.3s ease-in-out;
+  letter-spacing: 2px;
+  position: relative;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+.btn-start {
+  color: #fff;
+  background: linear-gradient(145deg, #ffcc00, #ff9900);
+  border-color: #ff6600;
+  box-shadow: 0 0.375rem 0 #cc5200, 0 0.625rem 1.25rem rgba(0, 0, 0, 0.3);
+  text-shadow: 2px 2px 0 #cc5200;
+}
+
+.btn-start:hover {
+  background: linear-gradient(145deg, #ffdd33, #ffbb00);
+  box-shadow: 0 0.25rem 0 #cc5200, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
 }
 </style>
