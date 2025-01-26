@@ -10,7 +10,7 @@ export const navigationGuard = async (
 ) => {
   const sessionStore = useSessionStore();
   const { playerId, nickname, roomId } = sessionStore;
-
+  console.log("GS", sessionStore.gameStatus);
   // Obsługa przypadku: użytkownik próbuje wejść do pokoju po linku
   if (to.params.roomId) {
     // Jeśli brakuje nicku lub playerId, przekieruj na NicknameInput

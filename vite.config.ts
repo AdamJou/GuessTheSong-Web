@@ -6,6 +6,8 @@ import vueDevTools from "vite-plugin-vue-devtools";
 import eslintPlugin from "vite-plugin-eslint";
 
 export default defineConfig({
+  base: "./", // WAŻNE: Ustawienie względnej ścieżki dla Firebase
+
   plugins: [
     vue(),
     vueDevTools(),
@@ -14,6 +16,9 @@ export default defineConfig({
       overrideConfigFile: ".eslintrc.cjs", // Wskaż ręcznie plik konfiguracyjny
     }),
   ],
+  build: {
+    target: "esnext",
+  },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),

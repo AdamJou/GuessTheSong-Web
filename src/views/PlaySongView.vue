@@ -45,6 +45,7 @@ const roomId = computed(() => sessionStore.roomId);
 const currentGame = computed(() => sessionStore.currentGame);
 const currentRound = computed(() => sessionStore.currentRound);
 const players = computed(() => sessionStore.players);
+const djId = computed(() => sessionStore.djId);
 const playerId = computed(() => sessionStore.playerId);
 const currentSong = ref<{ songId: string; songTitle: string } | null>(null);
 // Use the reusable useVotes composable

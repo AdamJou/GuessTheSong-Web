@@ -1,6 +1,6 @@
 <template>
   <div class="home-view">
-    <section>
+    <section v-if="!roomId">
       <h1>Czyja To Melodia?</h1>
       <div class="buttons-container">
         <button @click="handleStartGame" class="btn-start">Utwórz grę</button>
@@ -51,7 +51,7 @@ const router = useRouter();
 const sessionStore = useSessionStore();
 const errorStore = useErrorStore();
 const loadingStore = useLoadingStore();
-
+const roomId = sessionStore.roomId;
 const showJoinGameModal = ref(false);
 const roomIdInput = ref("");
 

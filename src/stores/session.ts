@@ -8,7 +8,7 @@ type GameStatus =
   | "voting"
   | "summary"
   | "finished";
-type RoundStatus = "voting" | "completed";
+type RoundStatus = "voting" | "completed" | "waiting";
 
 export const useSessionStore = defineStore("session", {
   state: () => ({
@@ -48,6 +48,7 @@ export const useSessionStore = defineStore("session", {
         if (this.roomId) {
           this.subscribeToRoomStatus();
           this.subscribeToCurrentGame();
+          this.subscribeToCurrentRound();
           this.subscribeToPlayers();
         }
 
