@@ -29,7 +29,7 @@ export interface Round {
   id: string; // Unikalne ID rundy
   song: Song; // Informacje o utworze
   votes: Record<string, string>; // Głosy: klucz - gracz, wartość - głosowany gracz
-  status: "voting" | "completed"; // Status rundy
+  status: "voting" | "completed" | "waiting"; // Status rundy
 }
 
 export interface Game {

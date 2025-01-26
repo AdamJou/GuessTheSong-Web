@@ -32,7 +32,7 @@
      -->
       <!-- OBSZAR INFORMUJĄCY, ŻE WSZYSCY GRACZE ZŁOŻYLI PIOSENKI -->
       <Transition name="fade" appear>
-        <div v-if="allPlayersSubmitted">
+        <div v-if="allPlayersSubmitted && isDj">
           <p style="color: white; margin-top: 1rem">
             Każdy wybrał już swój utwór, możesz teraz rozpocząć grę!
           </p>
@@ -82,6 +82,7 @@ import { useSessionStore } from "@/stores/session";
 import { getDatabase, ref as dbRef, onValue, off } from "firebase/database";
 import { updatePlayerSong } from "@/services/songService";
 import Status from "./Status.vue";
+import DjPanel from "@/views/DjPanel.vue";
 import SongSearch from "@/components/SongSearch.vue";
 // Inicjalizacja routera i store'ów
 const router = useRouter();
@@ -176,7 +177,16 @@ const handleGameStatusChange = (status: string | null) => {
 
   if (status === "voting") {
     if (isDj.value) {
-      router.push({ name: "DjPanel", params: { roomId } });
+      if (!router.hasRoute("DjPanel")) {
+        router.addRoute({
+          path: `/dj-panel/${roomId}`,
+          name: "DjPanel",
+          component: DjPanel,
+        });
+      }
+
+      router.push(`/dj-panel/${roomId}`); // Przekierowanie użytkownika po dodaniu trasy
+      // router.push({ name: "DjPanel", params: { roomId } });
     } else {
       router.push({ name: "Voting", params: { roomId } });
     }
@@ -202,14 +212,11 @@ watch(
 <style scoped>
 .song-selection {
   text-align: center;
-
-  margin-top: 50px;
+  padding: 2rem;
+  margin: 2rem;
 }
 
 form {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 }
 
 form div {
@@ -217,9 +224,6 @@ form div {
 }
 
 input {
-  padding: 10px;
-  font-size: 16px;
-  width: 300px;
 }
 
 button {
@@ -258,27 +262,15 @@ ul {
 }
 
 .players-grid {
-  max-width: 900px;
-  margin: 0 auto;
-  color: #fff;
-  /* For demonstration; remove if you have a global font set */
-  font-family: "Bungee", sans-serif;
 }
 
 /* The flexbox container */
 .player-list {
-  list-style: none;
-  padding: 1rem;
-  margin: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  justify-content: space-between; /* Adjust layout for space distribution */
 }
 
 /* Individual player items */
 .player-list > * {
-  flex: 1 1 calc(33.33% - 1rem); /* 3 items per row with gap spacing */
+  flex: 1 1 100px; /* 3 items per row with gap spacing */
   min-width: min-content;
   max-width: 100%; /* Prevent items from growing beyond their container */
   box-sizing: border-box;
@@ -313,16 +305,5 @@ ul {
 
 .not-submitted-icon {
   color: #ff5555; /* red-ish */
-}
-@media (max-width: 768px) {
-  .player-list > * {
-    flex: 1 1 calc(50% - 1rem);
-  }
-}
-
-@media (max-width: 480px) {
-  .player-list > * {
-    flex: 1 1 100%;
-  }
 }
 </style>

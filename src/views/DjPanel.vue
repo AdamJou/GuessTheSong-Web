@@ -50,6 +50,7 @@ const loadingStore = useLoadingStore();
 const roomId = sessionStorage.getItem("roomId") as string;
 const currentGame = computed(() => sessionStore.currentGame);
 const players = computed(() => sessionStore.players);
+
 const currentRound = computed(() => sessionStore.currentRound);
 const allSongsPlayed = ref(false);
 // Reactive variable for storing player songs and selected song

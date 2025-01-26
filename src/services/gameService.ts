@@ -38,6 +38,7 @@ export const createGame = async (): Promise<string> => {
       [sessionStore.playerId]: newPlayer,
     },
     currentGame: "",
+    justFinishedGame: "",
     currentRound: "",
     djId: sessionStore.playerId,
     status: "waiting",
@@ -140,7 +141,7 @@ export const createGameAndRound = async (roomId: string): Promise<void> => {
       wasPlayed: false,
     },
     votes: votes, // Pre-populated votes
-    status: "voting",
+    status: "waiting",
   };
 
   newGame.rounds[roundId] = newRound;
