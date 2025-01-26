@@ -311,7 +311,6 @@ const goBackToSongSelection = async () => {
 <style scoped>
 .play-song-view {
   text-align: center;
-  margin-top: 50px;
   color: white;
 }
 

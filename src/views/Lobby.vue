@@ -2,12 +2,14 @@
   <div class="lobby">
     <section>
       <h1>Lobby</h1>
-      <div class="room-code" @click="copyToClipboard">
+      <div class="room-code-wrapper" @click="copyToClipboard">
         <p>Kod pokoju</p>
-        <strong>{{ roomId }}</strong>
-        <font-awesome-icon :icon="['fas', 'copy']" class="copy-icon" />
+        <div class="room-code">
+          <span>{{ roomId }}</span>
+          <font-awesome-icon :icon="['fas', 'copy']" class="copy-icon" />
+        </div>
       </div>
-      <h2>Gracze:</h2>
+      <h3>Gracze</h3>
       <ul>
         <li v-for="(player, id) in players" :key="id">
           {{ player.name }}
@@ -150,12 +152,12 @@ watch(gameStatus, (newStatus) => {
 </script>
 
 <style scoped>
+.lobby {
+  color: white;
+}
 strong {
   color: #ff9900;
   font-size: larger;
-}
-h2 {
-  margin-top: 1rem;
 }
 
 ul {
@@ -168,31 +170,43 @@ ul {
 }
 li {
   margin: 0.5rem 0;
+  font-size: clamp(1rem, 0.4vw + 0.4rem, 1.5rem);
+  border-bottom: 1px solid #ff9900;
+}
+.room-code-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.845);
+  backdrop-filter: blur(2.7px);
+  -webkit-backdrop-filter: blur(2.7px);
+  border: 1px solid rgba(82, 28, 231, 0.579);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.375);
 }
 .room-code {
   display: flex;
   justify-content: center;
-  align-items: last baseline;
+  align-items: center;
   gap: 0.5rem;
-  background-color: #f9f9f9;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .room-code p {
   margin: 0;
-  font-weight: bold;
-  color: #333;
+  color: gray;
 }
 
-.room-code strong {
+.room-code span {
   font-size: 1.5rem;
-  color: #007bff;
+  color: #00ff99;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 200px;
 }
 
 .ic-dj {
@@ -202,10 +216,16 @@ li {
 .copy-icon {
   cursor: pointer;
   color: gray;
+  font-size: 20px;
   transition: color 0.3s;
+  transition: 0.3s ease-in-out;
 }
-.room-code:hover {
+.room-code-wrapper:hover {
   cursor: pointer;
+}
+.room-code-wrapper:hover > .room-code .copy-icon {
+  transform: scale(1.1);
+  color: #ff9900;
 }
 button {
   padding: 0.875rem 1.875rem; /* 14px 30px */
@@ -247,9 +267,5 @@ button {
 .btn-end:hover {
   color: #bbb;
   cursor: pointer;
-}
-
-.room-code:hover > .copy-icon {
-  color: #0056b3;
 }
 </style>

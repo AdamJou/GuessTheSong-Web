@@ -208,7 +208,8 @@ async function submitSelectedSong() {
 <style scoped>
 .song-search {
   text-align: center;
-  margin-top: 20px;
+  max-width: 100vw;
+  margin-bottom: 3rem;
 }
 
 .search-bar {
@@ -216,20 +217,18 @@ async function submitSelectedSong() {
   justify-content: center;
   align-items: center;
   gap: 10px;
-  margin-bottom: 20px;
 }
 
 input {
   padding: 10px;
   font-size: 16px;
-  width: 300px;
 }
 button {
   padding: 0.5rem 1.875rem; /* 14px 30px */
   font-size: 1rem; /* 18px */
   text-transform: uppercase;
   border-radius: 0.9375rem; /* 15px */
-  border: 0.25rem solid; /* 4px */
+  border: none;
   transition: all 0.3s ease-in-out;
   letter-spacing: 2px;
   position: relative;
@@ -237,6 +236,7 @@ button {
 }
 .btn-search {
   color: #fff;
+  height: 100%;
   background: linear-gradient(145deg, #ffcc00, #ff9900);
   border-color: #ff6600;
   box-shadow: 0 0.375rem 0 #cc5200, 0 0.625rem 1.25rem rgba(0, 0, 0, 0.3);
@@ -260,11 +260,14 @@ ul {
   border-radius: 10px;
   cursor: pointer;
   padding: 10px;
+  color: white;
   border: 1px solid #ccc;
   margin-bottom: 10px;
   transition: background-color 0.2s ease;
 }
-
+.video-item p {
+  margin: 0;
+}
 .video-item.selected {
   background-color: #007bff;
   color: white;

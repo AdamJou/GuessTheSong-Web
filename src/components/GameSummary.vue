@@ -108,19 +108,18 @@ function prevRound() {
 /* Główny kontener: ciemne tło, wyśrodkowanie, neonowy klimat */
 .game-summary {
   max-width: 500px;
-  min-width: 500px;
-  margin: 0 auto;
+  margin: 1rem 1rem; /* Wyśrodkowanie kontenera */
   background-color: #1e1f29;
   border: 1px solid #2a2b36;
   border-radius: 8px;
-  padding: 1.5rem;
   color: #ffffff;
   font-family: "Bungee", sans-serif;
+  padding: 1rem; /* Dodanie wewnętrznego odstępu */
 }
 
 /* Tytuł główny (Podsumowanie gry) */
 .game-summary h2 {
-  font-size: 1.2rem;
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
   margin-bottom: 1.2rem;
   color: #ffcc00; /* Żółty / złoty odcień */
   text-align: center;
@@ -131,14 +130,15 @@ function prevRound() {
 .no-rounds {
   text-align: center;
   color: #ccc;
-  font-size: 1rem;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
 }
 
 /* Podtytuł rundy */
 .game-summary h3 {
-  font-size: 1.1rem;
+  font-size: clamp(1.2rem, 2vw, 1.5rem);
   margin-bottom: 0.8rem;
-  color: white; /* neonowy zielony */
+  color: #00ff99; /* Neonowy zielony */
+  text-align: center;
 }
 
 /* Pojedyncze informacje o utworze/ graczu */
@@ -146,14 +146,16 @@ function prevRound() {
 .player-nickname {
   font-style: italic;
 }
+
 .player-nickname {
-  color: #00ff99; /* neonowy zielony */
-  font-style: italic;
+  color: #00ff99; /* Neonowy zielony */
+  font-size: clamp(0.9rem, 1.5vw, 1.1rem);
 }
 
 /* Nawigacja po rundach (przyciski) */
 .round-navigation {
   display: flex;
+  padding: 1rem;
   justify-content: center;
   gap: 1rem;
   margin-bottom: 1rem;
@@ -166,7 +168,7 @@ function prevRound() {
   padding: 0.6rem 1rem;
   cursor: pointer;
   font-family: inherit;
-  font-size: clamp(1.2rem, 16px, 1.8rem);
+  font-size: clamp(0.9rem, 1.2vw, 1rem);
   transition: background-color 0.3s ease;
   border-radius: 4px;
 }
@@ -179,12 +181,14 @@ function prevRound() {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
 hr {
-  margin: 0.5rem;
+  margin: 0.5rem 0;
 }
+
 /* Sekcja głosów */
 .votes h4 {
-  font-size: clamp(1.2rem, 14px, 1.8rem);
+  font-size: clamp(1.2rem, 2vw, 1.8rem);
   margin-top: 0.6rem;
   margin-bottom: 0.6rem;
   color: #ffcc00;
@@ -199,45 +203,55 @@ hr {
 
 .votes li {
   margin-bottom: 0.5rem;
-  font-size: 1rem;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
 }
 
 /* Kolorowanie poprawnego / błędnego głosu */
 .correct {
   color: #00ff99;
 }
+
 .wrong {
   color: #ff5555;
 }
+
 .voter {
   color: #ffcc00;
 }
+
 strong {
   font-size: 0.7em;
   color: gray;
 }
 
-/* Responsywność - zmniejszenie czcionek na bardzo wąskich ekranach */
-@media (max-width: 400px) {
+/* Dodatkowe media queries dla większych ekranów */
+@media (min-width: 768px) {
   .game-summary {
-    padding: 1rem;
+    max-width: 700px;
+    padding: 1.5rem;
+  }
+
+  strong {
+    font-size: 0.8em;
+  }
+}
+
+@media (min-width: 1024px) {
+  .game-summary {
+    max-width: 900px;
+    padding: 2rem;
   }
 
   .game-summary h2 {
-    font-size: 1.4rem;
+    font-size: clamp(1.8rem, 2vw, 2.5rem);
   }
 
   .game-summary h3 {
-    font-size: 1.1rem;
+    font-size: clamp(1.4rem, 2.5vw, 1.8rem);
   }
 
-  .votes li {
-    font-size: 0.9rem;
-  }
-
-  .round-navigation button {
-    font-size: 0.9rem;
-    padding: 0.4rem 0.8rem;
+  .votes h4 {
+    font-size: clamp(1.4rem, 2.5vw, 2rem);
   }
 }
 </style>

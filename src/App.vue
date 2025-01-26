@@ -253,7 +253,6 @@ const redirectToCurrentGameState = async (
       router.push({ name: "Summary", params: { roomId: roomId.value } });
       break;
     case "finished":
-      console.log("xd");
       sessionStore.clearRoomId();
 
       router.push({ name: "/home" });
@@ -283,16 +282,17 @@ body {
 
 #app {
   /* Ustawienia kontenera */
+  width: 100%;
   max-width: 1200px; /* szerokość max. np. na duże monitory */
-  margin: 60px auto 0 auto; /* wycentrowanie + odstęp od góry */
-  padding: 2rem; /* drobny padding z boków, żeby nie kleiło się do krawędzi */
+  margin: 0 auto 0 auto; /* wycentrowanie + odstęp od góry */
+  padding: 2rem 0; /* drobny padding z boków, żeby nie kleiło się do krawędzi */
   text-align: center;
   color: #2c3e50;
-  background-color: red;
-
   display: flex;
   justify-content: center;
   align-items: cetner;
+  max-width: 100vw;
+  overflow-y: auto;
 }
 
 /* Loader pełnoekranowy */
@@ -371,4 +371,29 @@ body {
     transform: scale(1);
   }
 }
+/* Ustawienie bazowego rozmiaru czcionki dla całego dokumentu */
+html {
+  font-size: 16px; /* 1rem = 16px */
+}
+
+/* Stylowanie nagłówków z użyciem funkcji clamp() */
+h1 {
+  font-size: clamp(1.5rem, 2vw + 1rem, 3rem);
+  line-height: 1.2;
+  font-weight: normal;
+}
+
+h2 {
+  font-size: clamp(1.25rem, 1.5vw + 1rem, 2.5rem);
+  line-height: 1.3;
+  font-weight: normal;
+}
+
+h3 {
+  font-size: clamp(1rem, 1.2vw + 0.8rem, 2rem);
+  line-height: 1.4;
+  font-weight: normal;
+}
+
+/* Kontynuuj dla h4, h5, h6 według potrzeb */
 </style>

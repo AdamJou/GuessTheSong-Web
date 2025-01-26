@@ -190,20 +190,6 @@ onBeforeUnmount(() => {
   color: white;
 }
 
-h1 {
-  font-size: 2rem;
-  margin-bottom: 20px;
-}
-
-p {
-  font-size: 1.2rem;
-}
-
-h2 {
-  margin-top: 20px;
-  font-size: 1.5rem;
-}
-
 ul {
   list-style-type: none;
   padding: 0;
