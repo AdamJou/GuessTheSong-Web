@@ -168,21 +168,21 @@ button {
 
 /* ---- Modal Content ---- */
 .modal-content {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(4px);
+  background: rgb(82, 28, 231);
   -webkit-backdrop-filter: blur(4px);
   border-radius: 0.75rem;
   padding: 2rem;
   width: 100%;
   max-width: 24rem;
   text-align: center;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
   color: #333;
 }
 
 .modal-content h2 {
   margin-bottom: 1rem;
   font-size: 1.5rem;
+  font-weight: normal;
+  color: #ff9900;
 }
 
 /* ---- Modal Buttons & Input ---- */
@@ -225,13 +225,6 @@ input {
 
 /* ---- Responsive Adjustments ---- */
 @media (max-width: 768px) {
-  /* If you want the section to adapt on smaller screens */
-  section {
-    height: auto;
-    width: 90%;
-    margin: 1rem auto;
-  }
-
   .buttons-container {
     flex-direction: column;
     gap: 1rem;

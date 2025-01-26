@@ -212,18 +212,11 @@ watch(
 <style scoped>
 .song-selection {
   text-align: center;
-  padding: 2rem;
-  margin: 2rem;
-}
-
-form {
+  max-width: 100vw;
 }
 
 form div {
   margin-bottom: 20px;
-}
-
-input {
 }
 
 button {
@@ -236,6 +229,8 @@ button {
   letter-spacing: 2px;
   position: relative;
   cursor: pointer;
+  font-family: "Bungee", sans-serif;
+
   margin-top: 1rem;
 }
 .btn-start {
@@ -258,31 +253,22 @@ ul {
   list-style-type: none;
   padding: 0;
   margin: 0;
+
   text-align: left;
 }
 
 .players-grid {
+  margin: 1rem;
 }
-
-/* The flexbox container */
-.player-list {
-}
-
-/* Individual player items */
-.player-list > * {
-  flex: 1 1 100px; /* 3 items per row with gap spacing */
-  min-width: min-content;
-  max-width: 100%; /* Prevent items from growing beyond their container */
-  box-sizing: border-box;
-}
-
 .player-item {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 0.5rem;
   color: #bcbfc2;
   font-weight: normal;
   padding: 0.5rem 1rem;
+  margin-top: 0.5rem;
   gap: 0.5rem;
+
   display: flex;
   justify-content: space-between;
   align-items: center;

@@ -2,7 +2,7 @@
   <div v-if="!roomId">
     <p>Ładowanie...</p>
   </div>
-  <div v-else>
+  <div v-else class="container">
     <Scoreboard />
 
     <!-- Jeśli to ostatnia gra (isLastGame), pokaż przyciski do zmiany game -->
@@ -84,6 +84,9 @@ watch(
 </script>
 
 <style scoped>
+.container {
+  max-width: 100vw;
+}
 .dj-controls {
   margin-top: 16px;
 }
@@ -92,6 +95,10 @@ watch(
 }
 .game-buttons {
   display: flex;
+  width: 100%;
+
+  align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 .game-buttons .active {
@@ -109,7 +116,6 @@ button {
   letter-spacing: 2px;
   position: relative;
   cursor: pointer;
-  margin-top: 1rem;
 }
 .btn-start {
   color: #fff;
@@ -117,6 +123,7 @@ button {
   border-color: #ff6600;
   box-shadow: 0 0.375rem 0 #cc5200, 0 0.625rem 1.25rem rgba(0, 0, 0, 0.3);
   text-shadow: 2px 2px 0 #cc5200;
+  margin-bottom: 2rem;
 }
 
 .btn-start:hover {

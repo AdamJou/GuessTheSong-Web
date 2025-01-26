@@ -10,7 +10,7 @@
         </div>
 
         <!-- Środkowa kolumna: "zagłosował na" (tylko jeśli oddano głos) -->
-        <div class="vote-label" v-if="votes[id]">zagłosował na</div>
+        <div class="vote-label" v-if="votes[id]">→</div>
         <!-- Jeśli nie ma głosu, zostawiamy środkową kolumnę pustą, by zachować układ -->
         <div class="vote-label" v-else></div>
 
@@ -79,7 +79,7 @@ h2 {
   align-items: center;
   justify-content: space-between; /* rozkład na całą szerokość */
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 15px;
+  padding: 1rem 0;
   font-size: 1.2rem;
 }
 
@@ -95,6 +95,8 @@ h2 {
   flex: 1;
   text-align: center;
   font-size: 0.9rem;
+  margin: 0;
+  line-height: 1;
   color: #ddd;
 }
 

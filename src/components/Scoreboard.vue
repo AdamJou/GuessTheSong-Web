@@ -53,6 +53,7 @@ onMounted(() => {
   max-width: 500px;
   margin: 0 auto;
   text-align: center;
+  padding: 1rem;
   font-family: "Bungee", sans-serif; /* lub inna wybrana czcionka */
   color: #fff; /* tekst w jasnym kolorze */
 }
