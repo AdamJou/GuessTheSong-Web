@@ -1,17 +1,19 @@
 <template>
   <div class="play-song-view" v-if="roomId">
-    <h1>Obecnie odtwarzamy:</h1>
+    <h2>Obecnie odtwarzamy</h2>
 
     <!-- Display current song -->
-    <div v-if="currentSong">
+    <div v-if="currentSong" class="song-container">
       <strong>{{ currentSong.songTitle }}</strong>
       <YouTubePlayer v-if="currentSong.songId" :songId="currentSong.songId" />
     </div>
-    <div v-if="allPlayersHaveVoted">
-      <button @click="goBackToSongSelection" class="btn-submit">
-        Wybierz następny utwór
-      </button>
-    </div>
+    <Transition name="cartoon-modal" appear>
+      <div v-if="allPlayersHaveVoted">
+        <button @click="goBackToSongSelection" class="btn-submit">
+          Wybierz następny utwór
+        </button>
+      </div>
+    </Transition>
     <!-- Display "Votes So Far" -->
     <VotingStatus />
 
@@ -33,11 +35,12 @@ import { useRouter } from "vue-router";
 import { useScoreCalculator } from "@/composables/useScoreCalculator";
 import YouTubePlayer from "@/components/YouTubePlayer.vue";
 import VotingStatus from "@/components/VotingStatus.vue";
-
+import { useLoadingStore } from "@/stores/useLoadingStore";
 const { calculateAndSaveScores } = useScoreCalculator();
 
-// Session Store and Router
+// Store and Router
 const sessionStore = useSessionStore();
+const loadingStore = useLoadingStore();
 const router = useRouter();
 
 // Reactive Data
@@ -102,6 +105,9 @@ watch(
 
 // Go back to song selection
 const goBackToSongSelection = async () => {
+  loadingStore.startLoading();
+  await new Promise((r) => setTimeout(r, 2000));
+
   try {
     const db = getDatabase();
 
@@ -122,7 +128,6 @@ const goBackToSongSelection = async () => {
       await update(dbRef(db, currentRoundPath), {
         status: "completed",
       });
-      alert("Cannot create a new round. All players have already played.");
       await update(dbRef(db, roomPath), {
         currentRound: "round1", // Update root-level currentRound
       });
@@ -133,7 +138,6 @@ const goBackToSongSelection = async () => {
         currentGame.value!.replace("game", "")
       );
       if (currentGameNumber >= playerCount) {
-        alert("All games have finished! The session is over.");
         await update(dbRef(db, roomPath), {
           status: "finished", // Oznaczamy w bazie, że rozgrywka się skończyła
           justFinishedGame: currentGame.value,
@@ -304,6 +308,8 @@ const goBackToSongSelection = async () => {
       error
     );
     alert("Failed to go back to song selection. Please try again.");
+  } finally {
+    loadingStore.stopLoading();
   }
 };
 </script>
@@ -312,6 +318,7 @@ const goBackToSongSelection = async () => {
 .play-song-view {
   text-align: center;
   color: white;
+  max-width: 100vw;
 }
 
 h1 {
@@ -321,8 +328,11 @@ h1 {
 
 p {
   font-size: 1.2rem;
+  margin: 0;
 }
-
+.song-container {
+  padding: 1rem;
+}
 h2 {
   margin-top: 20px;
   font-size: 1.5rem;

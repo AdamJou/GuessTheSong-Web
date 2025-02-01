@@ -60,6 +60,7 @@ const filteredPlayers = computed(() => {
   margin-top: 20px;
   color: white;
   font-family: "Bungee", sans-serif;
+  padding: 0 1rem;
 }
 
 h2 {
@@ -79,7 +80,7 @@ h2 {
   align-items: center;
   justify-content: space-between; /* rozkład na całą szerokość */
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 1rem 0;
+  padding: 1rem;
   font-size: 1.2rem;
 }
 

@@ -1,18 +1,27 @@
 <template>
   <div class="voting-view">
-    <h1>{{ currentRound }}</h1>
-    <!-- Display message while waiting for DJ -->
+    <h1>RUNDA {{ currentRound?.replace(/\D/g, "") }}</h1>
+    <!-- Wyświetlamy komunikat, gdy utwór nie został jeszcze wybrany -->
     <p v-if="!currentSong?.songId" class="blink">DJ wybiera utwór...</p>
 
-    <!-- Display song details once available -->
-    <transition name="fade">
-      <div v-if="currentSong?.songId">
-        <p>
-          Tytuł: <strong>{{ currentSong.songTitle }}</strong>
-        </p>
-      </div>
-    </transition>
-    <!-- Voting Section -->
+    <!-- Wyświetlamy informacje o utworze, gdy już jest dostępny -->
+    <div v-if="currentSong" class="song-container">
+      <transition name="fade">
+        <div v-if="currentSong?.songId">
+          <p>
+            Tytuł: <strong>{{ currentSong.songTitle }}</strong>
+          </p>
+        </div>
+      </transition>
+      <!-- YouTubePlayer pojawi się nad sekcją głosowania, 
+         warunkowo – tylko gdy mamy utwór oraz tryb gry "together" -->
+      <YouTubePlayer
+        v-if="currentSong?.songId && gameMode === 'separate'"
+        :songId="currentSong.songId"
+      />
+    </div>
+
+    <!-- Sekcja głosowania -->
     <div v-if="currentSong && currentSong.songId && !hasVoted">
       <h3>Zagłosuj na gracza</h3>
       <ul>
@@ -31,49 +40,56 @@
         :class="{ disabled: !selectedPlayer }"
         class="btn-submit"
       >
-        Submit Vote
+        Zagłosuj
       </button>
     </div>
 
-    <!-- After Voting -->
+    <!-- Po głosowaniu -->
     <div v-if="hasVoted">
       <p>
         Zagłosowałeś na <strong class="voted-on">{{ votedPlayer }}</strong>
       </p>
     </div>
 
-    <!-- Display Real-Time Votes -->
+    <!-- Wyświetlamy status głosowania w czasie rzeczywistym -->
     <VotingStatus v-if="hasVoted" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from "vue";
+import YouTubePlayer from "@/components/YouTubePlayer.vue";
 import VotingStatus from "@/components/VotingStatus.vue";
 import { getDatabase, ref as dbRef, onValue, update } from "firebase/database";
 import { useSessionStore } from "@/stores/session";
 import { useRouter } from "vue-router";
 import { useVotes } from "@/composables/useVotes";
 
-// Router and Session Store
+// Router i Store
 const router = useRouter();
 const sessionStore = useSessionStore();
 
-// Reactive Data
+// Reactive dane z store
 const roomId = computed(() => sessionStore.roomId);
 const currentGame = computed(() => sessionStore.currentGame);
 const currentRound = computed(() => sessionStore.currentRound);
 const players = computed(() => sessionStore.players);
 const playerId = computed(() => sessionStore.playerId);
 const isDJ = computed(() => sessionStore.djId === playerId.value);
+
+// Dane dotyczące utworu
 const currentSong = ref<{ songId: string; songTitle: string } | null>(null);
+
+// Wybór gracza do głosowania
 const selectedPlayer = ref<string | null>(null);
+
+// Status pokoju (np. zmiana do podsumowania lub zakończenia rundy)
 const roomStatus = ref<string | null>(null);
 
-// Use the reusable useVotes composable
+// Subskrypcja głosów (używamy gotowego composable)
 const { votes, hasVoted, votedPlayer, getPlayerName, resetVotes } = useVotes();
 
-// Other players excluding the current player
+// Inni gracze (bez bieżącego gracza)
 const otherPlayers = computed(() =>
   Object.keys(players.value || {}).reduce((filtered, id) => {
     if (id !== playerId.value) {
@@ -83,15 +99,16 @@ const otherPlayers = computed(() =>
   }, {} as Record<string, { name: string }>)
 );
 
-// Firebase Subscription Management for Room Status and Song
+// Firebase – subskrypcje dla statusu pokoju, utworu oraz trybu gry
+const db = getDatabase();
+
 let songUnsubscribe: (() => void) | null = null;
 let roomStatusUnsubscribe: (() => void) | null = null;
+let gameModeUnsubscribe: (() => void) | null = null;
 
-// Subscribe to Room Status
+// Subskrypcja statusu pokoju
 const subscribeToRoomStatus = () => {
   if (!roomId.value) return;
-
-  const db = getDatabase();
   const roomStatusRef = dbRef(db, `rooms/${roomId.value}/status`);
   roomStatusUnsubscribe = onValue(roomStatusRef, (snapshot) => {
     roomStatus.value = snapshot.val();
@@ -101,54 +118,54 @@ const subscribeToRoomStatus = () => {
   });
 };
 
-const unsubscribeFromRoomStatus = () => {
-  if (roomStatusUnsubscribe) {
-    roomStatusUnsubscribe();
-    roomStatusUnsubscribe = null;
-  }
-};
-
-// Subscribe to Current Song
+// Subskrypcja aktualnego utworu
 const subscribeToSong = () => {
   if (!roomId.value || !currentGame.value || !currentRound.value) return;
-
-  const db = getDatabase();
   const songRef = dbRef(
     db,
     `rooms/${roomId.value}/games/${currentGame.value}/rounds/${currentRound.value}/song`
   );
-
   songUnsubscribe = onValue(songRef, (snapshot) => {
     currentSong.value = snapshot.exists() ? snapshot.val() : null;
     console.log("Current Song:", currentSong.value);
   });
 };
 
-const unsubscribeFromSong = () => {
-  if (songUnsubscribe) {
-    songUnsubscribe();
-    songUnsubscribe = null;
-  }
+// Subskrypcja trybu gry
+const subscribeToGameMode = () => {
+  if (!roomId.value) return;
+  const gameModeRef = dbRef(db, `rooms/${roomId.value}/gameMode`);
+  gameModeUnsubscribe = onValue(gameModeRef, (snapshot) => {
+    gameMode.value = snapshot.val();
+  });
 };
 
-// Reset state when the round changes
+// Reactive zmienna dla trybu gry (np. "together" lub "separate")
+const gameMode = ref<string | null>(null);
+
+// Inicjalizujemy subskrypcje
+subscribeToRoomStatus();
+subscribeToSong();
+subscribeToGameMode();
+
+// Resetujemy stan przy zmianie rundy
 watch(
   currentRound,
   () => {
-    unsubscribeFromSong();
+    if (songUnsubscribe) songUnsubscribe();
     subscribeToSong();
-    resetVotes(); // Reset voting state when the round changes
-    selectedPlayer.value = null; // Clear the selected player
+    resetVotes(); // Reset głosowania przy zmianie rundy
+    selectedPlayer.value = null;
   },
   { immediate: true }
 );
 
-// Handle player selection
+// Funkcja wyboru gracza
 const selectPlayer = (id: string) => {
   selectedPlayer.value = id;
 };
 
-// Submit the vote
+// Funkcja wysyłania głosu
 const submitVote = async () => {
   if (
     !roomId.value ||
@@ -161,38 +178,44 @@ const submitVote = async () => {
     return;
   }
 
-  const db = getDatabase();
   const votesRef = dbRef(
     db,
     `rooms/${roomId.value}/games/${currentGame.value}/rounds/${currentRound.value}/votes`
   );
-
   await update(votesRef, {
     [playerId.value]: selectedPlayer.value,
   });
-
-  alert("Vote submitted successfully!");
 };
 
-// Initial Setup: Subscribe to Room Status
-subscribeToRoomStatus();
-
+// Czyszczenie subskrypcji przy odmontowaniu komponentu
 onBeforeUnmount(() => {
-  unsubscribeFromSong();
-  unsubscribeFromRoomStatus();
+  if (songUnsubscribe) {
+    songUnsubscribe();
+    songUnsubscribe = null;
+  }
+  if (roomStatusUnsubscribe) {
+    roomStatusUnsubscribe();
+    roomStatusUnsubscribe = null;
+  }
+  if (gameModeUnsubscribe) {
+    gameModeUnsubscribe();
+    gameModeUnsubscribe = null;
+  }
 });
 </script>
 
 <style scoped>
 .voting-view {
   text-align: center;
-  margin-top: 50px;
   color: white;
+  max-width: 100vw;
 }
-
+h1 {
+  margin-bottom: 0;
+}
 ul {
   list-style-type: none;
-  padding: 0;
+  padding: 0 1rem;
 }
 
 li {
@@ -209,7 +232,6 @@ li.selected {
 }
 
 button {
-  margin-top: 20px;
   padding: 10px 20px;
   font-size: 16px;
   cursor: pointer;
@@ -217,8 +239,11 @@ button {
   background-color: #007bff;
   color: white;
   border-radius: 5px;
+  margin: 2rem 0;
 }
-
+.song-container {
+  padding: 1rem;
+}
 button:disabled {
   background-color: #ccc;
   cursor: not-allowed;
@@ -236,10 +261,10 @@ button:disabled {
   }
 }
 
-/* Klasa dla migotania */
 .blink {
   animation: blink 1.5s infinite ease-in-out;
 }
+
 .fade-enter-active {
   animation: fadeIn 0.8s ease-in-out;
 }
@@ -268,6 +293,7 @@ button:disabled {
     transform: translateY(-20px);
   }
 }
+
 strong {
   color: #ff9900;
   font-size: larger;
@@ -276,18 +302,8 @@ strong {
   color: #ffcc00;
   font-size: larger;
 }
-button {
-  padding: 0.875rem 1.875rem; /* 14px 30px */
-  font-size: 1.125rem; /* 18px */
-  text-transform: uppercase;
-  border-radius: 0.9375rem; /* 15px */
-  border: 0.25rem solid; /* 4px */
-  transition: all 0.3s ease-in-out;
-  letter-spacing: 2px;
-  position: relative;
-  cursor: pointer;
-  margin-top: 1rem;
-}
+
+/* Przykładowe style przycisku do głosowania */
 .btn-submit {
   color: #fff;
   background: linear-gradient(145deg, #ffcc00, #ff9900);
@@ -300,6 +316,7 @@ button {
   background: linear-gradient(145deg, #ffdd33, #ffbb00);
   box-shadow: 0 0.25rem 0 #cc5200, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
 }
+
 .disabled {
   opacity: 0.3;
   cursor: not-allowed;

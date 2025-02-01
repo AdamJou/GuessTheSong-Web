@@ -3,19 +3,21 @@
     <section v-if="!roomId">
       <h1>Czyja To Melodia?</h1>
       <div class="buttons-container">
+        <!-- Po kliknięciu otwieramy modal z opcją trybu gry -->
         <button @click="handleStartGame" class="btn-start">Utwórz grę</button>
         <button @click="showJoinGameModal = true" class="btn-join">
           Dołącz do gry
         </button>
       </div>
     </section>
-    <!-- Modal -->
-    <transition name="cartoon-modal" appear>
-      <div
-        v-if="showJoinGameModal"
-        class="modal"
-        @click.self="showJoinGameModal = false"
-      >
+
+    <!-- Modal do dołączania do gry -->
+    <div
+      v-if="showJoinGameModal"
+      class="modal"
+      @click.self="showJoinGameModal = false"
+    >
+      <transition name="cartoon-modal" appear>
         <div class="modal-content">
           <h2>Dołącz do gry</h2>
           <input
@@ -23,9 +25,7 @@
             type="text"
             placeholder="Wprowadź kod pokoju"
           />
-
           <div class="modal-actions">
-            <!-- If you want the same "arcade" button styles, you can reuse .btn-start, .btn-join, or create new classes. -->
             <button @click="handleJoinGame" class="btn-modal-confirm">
               Dołącz
             </button>
@@ -34,8 +34,53 @@
             </button>
           </div>
         </div>
-      </div>
-    </transition>
+      </transition>
+    </div>
+
+    <!-- Modal do wyboru trybu gry przy tworzeniu pokoju -->
+    <div
+      v-if="showStartGameModal"
+      class="modal"
+      @click.self="showStartGameModal = false"
+    >
+      <transition name="cartoon-modal" appear>
+        <div class="modal-content">
+          <h2>Wybierz tryb gry</h2>
+          <div class="toggle-container">
+            <!-- Etykieta może być w języku polskim, a wartość pozostaje zgodna z typem GameMode -->
+            <label class="toggle-option">
+              <input
+                type="radio"
+                name="gameMode"
+                value="together"
+                v-model="gameMode"
+              />
+              Razem
+            </label>
+            <label class="toggle-option">
+              <input
+                type="radio"
+                name="gameMode"
+                value="separate"
+                v-model="gameMode"
+              />
+              Osobno
+            </label>
+          </div>
+          <div class="modal-actions">
+            <button @click="confirmStartGame" class="btn-modal-confirm">
+              Start
+            </button>
+            <button
+              @click="showStartGameModal = false"
+              class="btn-modal-cancel"
+            >
+              Anuluj
+            </button>
+          </div>
+        </div>
+      </transition>
+    </div>
   </div>
 </template>
 
@@ -52,17 +97,32 @@ const sessionStore = useSessionStore();
 const errorStore = useErrorStore();
 const loadingStore = useLoadingStore();
 const roomId = sessionStore.roomId;
+
+// Modal dla dołączania do gry
 const showJoinGameModal = ref(false);
 const roomIdInput = ref("");
 
-const handleStartGame = async () => {
+// Modal dla opcji przy tworzeniu gry
+const showStartGameModal = ref(false);
+// Tryb gry: "razem" (domyślnie) lub "osobno"
+const gameMode = ref<"together" | "separate">("together");
+
+// Funkcja otwierająca modal do wyboru trybu gry
+const handleStartGame = () => {
+  showStartGameModal.value = true;
+};
+
+// Funkcja potwierdzająca wybór trybu i rozpoczynająca grę
+const confirmStartGame = async () => {
   try {
-    const roomId = await createGame();
-    sessionStore.setRoomId(roomId); // Synchronizuj pokój w store
-    router.push(`/lobby/${roomId}`); // Przekierowanie do lobby
+    const roomId = await createGame(gameMode.value);
+    sessionStore.setRoomId(roomId);
+    // Opcjonalnie: sessionStore.setGameMode(gameMode.value);
+    router.push(`/lobby/${roomId}`);
+    showStartGameModal.value = false;
   } catch (error) {
     console.error("Error starting game:", error);
-    alert("An error occurred while creating the game. Please try again.");
+    alert("Wystąpił błąd podczas tworzenia gry. Spróbuj ponownie.");
   }
 };
 
@@ -70,12 +130,12 @@ const handleJoinGame = async () => {
   loadingStore.startLoading();
   try {
     if (!roomIdInput.value.trim()) {
-      alert("Please enter a valid room code.");
+      alert("Wprowadź poprawny kod pokoju.");
       return;
     }
     await joinGame(roomIdInput.value.trim());
-    sessionStore.setRoomId(roomIdInput.value.trim()); // Synchronizuj pokój w store
-    router.push(`/lobby/${roomIdInput.value.trim()}`); // Przekierowanie do lobby
+    sessionStore.setRoomId(roomIdInput.value.trim());
+    router.push(`/lobby/${roomIdInput.value.trim()}`);
     showJoinGameModal.value = false;
   } catch (error) {
     console.error("Error joining game:", error);
@@ -90,6 +150,10 @@ const handleJoinGame = async () => {
 </script>
 
 <style scoped>
+/* Podstawowe style */
+h1 {
+  color: white;
+}
 section {
   display: flex;
   flex-direction: column;
@@ -97,11 +161,13 @@ section {
   justify-content: space-between;
   border-radius: 16px;
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  background-color: rgba(81, 24, 204, 0.12);
   backdrop-filter: blur(2.7px);
   -webkit-backdrop-filter: blur(2.7px);
-  border: 1px solid rgba(83, 28, 231, 0.04);
+  border: 1px solid rgb(82, 28, 231);
   height: 40vh;
   padding: 2rem;
+  margin: 1rem;
 }
 .home-view {
   text-align: center;
@@ -115,11 +181,11 @@ h1 {
   gap: 2rem;
 }
 button {
-  padding: 0.875rem 1.875rem; /* 14px 30px */
-  font-size: 1.125rem; /* 18px */
+  padding: 0.875rem 1.875rem;
+  font-size: 1.125rem;
   text-transform: uppercase;
-  border-radius: 0.9375rem; /* 15px */
-  border: 0.25rem solid; /* 4px */
+  border-radius: 0.9375rem;
+  border: 0.25rem solid;
   transition: all 0.3s ease-in-out;
   letter-spacing: 2px;
   position: relative;
@@ -152,6 +218,8 @@ button {
   background: linear-gradient(145deg, #33ddff, #00bbff);
   box-shadow: 0 0.25rem 0 #005a99, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
 }
+
+/* ---- Modal Style ---- */
 .modal {
   position: fixed;
   top: 0;
@@ -166,16 +234,16 @@ button {
   box-sizing: border-box;
 }
 
-/* ---- Modal Content ---- */
 .modal-content {
   background: rgb(82, 28, 231);
   -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
   border-radius: 0.75rem;
   padding: 2rem;
   width: 100%;
   max-width: 24rem;
   text-align: center;
-  color: #333;
+  color: #fff;
 }
 
 .modal-content h2 {
@@ -185,7 +253,6 @@ button {
   color: #ff9900;
 }
 
-/* ---- Modal Buttons & Input ---- */
 .modal-actions {
   margin-top: 1.5rem;
   display: flex;
@@ -213,14 +280,34 @@ button {
 }
 
 input {
-  padding: 0.625rem; /* 10px */
+  padding: 0.625rem;
   font-size: 1rem;
   width: 100%;
-  max-width: 16rem; /* 256px */
+  max-width: 16rem;
   margin: 0.75rem auto;
   border: 1px solid #ccc;
-  border-radius: 0.3125rem; /* 5px */
+  border-radius: 0.3125rem;
   box-sizing: border-box;
+}
+
+/* ---- Style Toggle dla trybu gry ---- */
+.toggle-container {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin: 1rem 0;
+}
+
+.toggle-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.125rem;
+  cursor: pointer;
+}
+
+.toggle-option input[type="radio"] {
+  accent-color: #ff9900;
 }
 
 /* ---- Responsive Adjustments ---- */

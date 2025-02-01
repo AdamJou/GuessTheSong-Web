@@ -14,9 +14,13 @@
           </tr>
         </thead>
         <tbody>
-          <!-- Wyświetlamy posortowanych graczy -->
-          <tr v-for="player in sortedPlayers" :key="player.name">
-            <td>{{ player.name }}</td>
+          <!-- Wyświetlamy posortowanych graczy wraz z indeksem -->
+          <tr v-for="(player, index) in sortedPlayers" :key="player.name">
+            <td>
+              {{ player.name }}
+              <!-- Wyświetlamy ikonę korony tylko przy najwyższym wyniku w ostatniej grze -->
+              <span v-if="lastGame && index === 0" class="crown-icon">👑</span>
+            </td>
             <td>{{ player.score }}</td>
           </tr>
         </tbody>
@@ -29,9 +33,13 @@
 import { computed, onMounted } from "vue";
 import { useSessionStore } from "@/stores/session";
 
+const props = defineProps<{
+  lastGame: boolean;
+}>();
+
 const sessionStore = useSessionStore();
 
-// Sortujemy graczy malejąco po score
+// Sortujemy graczy malejąco wg score
 const sortedPlayers = computed(() => {
   const playersObj = sessionStore.players || {};
   const playersArray = Object.values(playersObj);
@@ -48,56 +56,55 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Kontener główny: wyśrodkowanie w pionie, ograniczenie szerokości, itp. */
+/* Kontener główny: wyśrodkowanie, ograniczenie szerokości, itd. */
 .scoreboard-container {
   max-width: 500px;
   margin: 0 auto;
   text-align: center;
   padding: 1rem;
-  font-family: "Bungee", sans-serif; /* lub inna wybrana czcionka */
-  color: #fff; /* tekst w jasnym kolorze */
+  font-family: "Bungee", sans-serif;
+  color: #fff;
 }
 
 /* Nagłówek */
 .scoreboard-container h2 {
   font-size: clamp(1.2rem, 5vw, 1.8rem);
-
   margin-bottom: 1rem;
-  color: #ffcc00; /* lekko żółty / złoty */
+  color: #ffcc00;
 }
 
-/* Wyświetlanie informacji o braku graczy */
+/* Informacja o braku graczy */
 .scoreboard-container p {
   color: #ccc;
 }
 
-/* Kontener na tabelę z możliwością przewijania w poziomie na wąskich ekranach */
+/* Kontener tabeli z przewijaniem poziomym na wąskich ekranach */
 .table-wrapper {
-  overflow-x: auto; /* jeżeli tabela jest za szeroka, pojawi się przewijanie */
+  overflow-x: auto;
   margin-bottom: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
 }
 
-/* Sama tabela */
+/* Tabela */
 .scoreboard-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 300px; /* by zachować czytelność przy wąskim oknie */
+  min-width: 300px;
 }
 
-/* Główki tabeli */
+/* Nagłówki tabeli */
 .scoreboard-table th {
-  background-color: #222; /* ciemniejsze tło */
-  color: #00ff99; /* neonowy kolor */
+  background-color: #222;
+  color: #00ff99;
   padding: 12px;
-  border-bottom: 2px solid #444; /* delikatny border */
-  text-transform: uppercase; /* duże litery */
+  border-bottom: 2px solid #444;
+  text-transform: uppercase;
   letter-spacing: 1px;
   font-size: 1rem;
 }
 
-/* Komórki w wierszach */
+/* Komórki tabeli */
 .scoreboard-table td {
   padding: 12px;
   border-bottom: 1px solid #333;
@@ -105,26 +112,30 @@ onMounted(() => {
   text-align: center;
 }
 
-/* Kolorowanie wierszy naprzemiennie (opcjonalne) */
+/* Kolorowanie naprzemienne wierszy */
 .scoreboard-table tbody tr:nth-child(odd) {
-  background-color: #2a2b36; /* ciemniejszy */
+  background-color: #2a2b36;
 }
 .scoreboard-table tbody tr:nth-child(even) {
   background-color: #1e1f29;
 }
 
-/* Możesz też dodać efekt najechania kursorem (hover) */
+/* Efekt hover dla wierszy */
 .scoreboard-table tbody tr:hover {
-  background-color: #343646; /* lekko jaśniejszy odcień */
+  background-color: #343646;
 }
 
-/* Responsywność – na bardzo wąskich ekranach (np. smartfonach)
-   dopasowujemy rozmiary czcionek. */
+/* Stylizacja ikony korony */
+.crown-icon {
+  margin-left: 0.5rem;
+  font-size: 1.2rem; /* Możesz dostosować rozmiar */
+}
+
+/* Responsywność – modyfikacja czcionek i paddingu dla małych ekranów */
 @media (max-width: 400px) {
   .scoreboard-container h2 {
     font-size: 1.5rem;
   }
-
   .scoreboard-table th,
   .scoreboard-table td {
     font-size: 0.9rem;

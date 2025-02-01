@@ -8,6 +8,7 @@ export type Players = Record<
   string,
   { name: string; score: number; ready: boolean }
 >;
+export type GameMode = "together" | "separate";
 
 export interface Song {
   songId: string; // Unikalne ID utworu
@@ -48,6 +49,7 @@ export interface Room {
   status: "waiting" | "song_selection" | "voting" | "summary" | "finished"; // Status gry
   games: Record<string, Game>; // Gry w ramach pokoju
   justFinishedGame: string | undefined;
+  gameMode: GameMode;
 }
 
 export interface YouTubeVideo {
