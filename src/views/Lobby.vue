@@ -1,5 +1,5 @@
 <template>
-  <div class="lobby">
+  <div class="lobby" :style="lobbyStyle">
     <section>
       <h1>Lobby</h1>
       <div class="room-code-wrapper" @click="copyToClipboard">
@@ -72,6 +72,14 @@ const canStartGame = computed(
   () => Object.keys(players.value || {}).length > 1
 );
 
+// Fix lobby animation
+const isVisible = ref(false);
+const lobbyStyle = computed(() => {
+  return {
+    opacity: isVisible.value ? "1" : "0",
+    transition: "opacity 0.5s ease",
+  };
+});
 const currentUrl = ref(window.location.href);
 
 const copyToClipboard = async () => {
@@ -129,6 +137,9 @@ const deleteGame = () => {
 
 // Główna logika w onMounted
 onMounted(async () => {
+  setTimeout(() => {
+    isVisible.value = true;
+  }, 1000);
   await ensurePlayerInRoom(); // Upewnij się, że gracz jest w pokoju
   watchRoomRemoved();
 });
