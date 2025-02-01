@@ -102,7 +102,6 @@ const ensurePlayerInRoom = async () => {
 // Obsługa rozpoczęcia gry przez DJ-a
 const handleStartGame = async () => {
   loadingStore.startLoading();
-  console.log("Starting the game...");
   await new Promise((r) => setTimeout(r, 2000));
 
   try {

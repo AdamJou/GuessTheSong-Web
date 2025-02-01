@@ -1,6 +1,6 @@
 import { getDatabase, ref as dbRef, set, update, get } from "firebase/database";
 import { useSessionStore } from "@/stores/session";
-import type { Room, Player, Game, Round } from "../types/types";
+import type { Room, Player, Game, Round, GameMode } from "../types/types";
 import { generateRoomCode } from "@/utils/roomCodeGenerator";
 
 const database = getDatabase();
@@ -13,7 +13,9 @@ const updateCurrentGame = async (
   await update(playerRef, { currentGame: roomId });
   console.log(`Updated currentGame for player ${playerId} to room ${roomId}`);
 };
-export const createGame = async (): Promise<string> => {
+export const createGame = async (
+  selectedGameMode: GameMode
+): Promise<string> => {
   const sessionStore = useSessionStore();
 
   if (!sessionStore.playerId || !sessionStore.nickname) {
@@ -43,6 +45,7 @@ export const createGame = async (): Promise<string> => {
     djId: sessionStore.playerId,
     status: "waiting",
     games: {},
+    gameMode: selectedGameMode,
   };
 
   const roomRef = dbRef(database, `rooms/${roomId}`);

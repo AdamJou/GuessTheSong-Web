@@ -1,7 +1,7 @@
 <template>
   <div class="song-search">
     <div v-if="fetchingPlayerSongs">
-      <p>Loading player songs...</p>
+      <p>Wyszukiwanie...</p>
     </div>
 
     <!-- 2) Gracz ma już piosenkę w bazie -->
@@ -26,7 +26,7 @@
       </div>
 
       <p v-if="error" class="error">{{ error }}</p>
-      <p v-if="loading">Loading songs...</p>
+      <p v-if="loading">Wyszkiwanie...</p>
 
       <!-- Lista wyników wyszukiwania -->
       <ul v-if="!loading && videos.length">
@@ -48,9 +48,13 @@
       </ul>
 
       <!-- Informacja o wybranym utworze i przycisk zatwierdzania -->
-      <div v-if="selectedSong">
-        <button @click="submitSelectedSong">Zatwierdź</button>
-      </div>
+      <Transition name="cartoon-modal" appear>
+        <div v-if="selectedSong">
+          <button @click="submitSelectedSong" class="btn-submit">
+            Zatwierdź
+          </button>
+        </div>
+      </Transition>
     </div>
   </div>
 </template>
@@ -197,7 +201,6 @@ async function submitSelectedSong() {
       selectedSong.value.id.videoId,
       selectedSong.value.snippet.title
     );
-    alert("Song submitted successfully!");
   } catch (err) {
     console.error("Error saving song:", err);
     alert("Failed to save the song. Please try again.");
@@ -209,6 +212,7 @@ async function submitSelectedSong() {
 .song-search {
   text-align: center;
   max-width: 100vw;
+  padding: 1rem;
   margin-bottom: 3rem;
 }
 

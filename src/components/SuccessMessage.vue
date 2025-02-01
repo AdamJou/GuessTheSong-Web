@@ -18,13 +18,14 @@ const successStore = useSuccessStore();
   top: 1rem;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #5fff4d;
+  background-color: #00ff99;
   color: #fff;
   padding: 1rem 2rem;
   border-radius: 0.5rem;
   font-weight: bold;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   z-index: 9999;
+  color: black;
   font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
 }
 </style>

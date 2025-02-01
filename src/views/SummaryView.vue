@@ -3,37 +3,49 @@
     <p>Ładowanie...</p>
   </div>
   <div v-else class="container">
-    <Scoreboard />
+    <Scoreboard :lastGame="isLastGame" />
 
-    <!-- Jeśli to ostatnia gra (isLastGame), pokaż przyciski do zmiany game -->
+    <!-- Jeśli to ostatnia gra, pokaż przyciski do zmiany gry -->
     <div v-if="isLastGame" class="last-game-nav">
-      <p>To była ostatnia gra. Możesz przejrzeć wyniki wszystkich gier:</p>
+      <p>To była ostatnia gra. Możesz przejrzeć wyniki wszystkich gier</p>
       <div class="game-buttons">
         <button
           v-for="gid in allGameIds"
           :key="gid"
           @click="setDisplayedGame(gid)"
           :class="{ active: gid === displayedGameId }"
+          class="btn-game"
         >
-          {{ gid }}
+          GRA
+          {{ gid.replace(/\D/g, "") }}
         </button>
       </div>
     </div>
 
-    <!-- 
-      GameSummary z :gameData="displayedGameData"
-      => brak fetchu w GameSummary 
-    -->
+    <!-- Podsumowanie gry -->
     <GameSummary v-if="displayedGameId" :gameData="displayedGameData" />
 
-    <!-- Kontrolki DJ-a do next fazy -->
-    <div v-if="isDj && !isRoomFinished" class="dj-controls">
-      <button @click="setSongSelection" class="btn-start">
+    <div class="tet">
+      <PlayersReadyStatus v-if="!isRoomFinished && !isLastGame" />
+    </div>
+    <!-- Komponent pokazujący status gotowości graczy -->
+
+    <!-- Jeśli gracz NIE JEST DJ-em i NIE JEST gotowy -->
+    <div v-if="!isRoomFinished && !playerReady" class="player-ready-control">
+      <button @click="handleSetReady" class="btn-ready">Jestem gotowy</button>
+    </div>
+
+    <!-- Jeśli DJ i wszyscy gracze są gotowi, pokazujemy przycisk -->
+    <div
+      v-if="isDj && allPlayersReady && !isRoomFinished && !isLastGame"
+      class="dj-controls"
+    >
+      <button @click="startNextGameHandler" class="btn-start">
         Rozpocznij kolejną grę
       </button>
     </div>
 
-    <!-- Kiedy status=finished -->
+    <!-- Kontrolki dla zakończonej rozgrywki -->
     <div v-if="isRoomFinished" class="finished-controls">
       <p>Rozgrywka się zakończyła!</p>
       <button @click="goHome" class="btn-start">
@@ -44,14 +56,16 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch } from "vue";
+import { onMounted, watch, computed } from "vue";
 import Scoreboard from "@/components/Scoreboard.vue";
-import Status from "@/views/Status.vue";
 import GameSummary from "@/components/GameSummary.vue";
+import PlayersReadyStatus from "@/components/PlayersReadyStatus.vue";
 import { useSummaryLogic } from "@/composables/useSummaryLogic";
 import { useSessionStore } from "@/stores/session";
-
-// Uzyskujemy logikę z composable
+import { usePlayerReady } from "@/composables/usePlayerReady";
+import { useSuccessStore } from "@/stores/useSuccessStore";
+const successStore = useSuccessStore();
+// Uzyskujemy logikę Summary z composable
 const {
   roomId,
   isDj,
@@ -67,14 +81,46 @@ const {
   goHome,
 } = useSummaryLogic();
 
-const sessionStore = useSessionStore();
+// Uzyskujemy logikę gotowości graczy
+const { setCurrentPlayerReady, players, resetReadyStatus } = usePlayerReady();
 
-// Jednorazowa inicjalizacja: wczytanie danych z bazy
+const sessionStore = useSessionStore();
+// ✅ **Sprawdza, czy wszyscy gracze (łącznie z DJ-em) mają ustawione ready === true**
+const allPlayersReady = computed(() => {
+  const p = players.value;
+  const keys = Object.keys(p);
+  if (keys.length === 0) return false;
+  keys.every((id) => p[id]?.ready === true)
+    ? successStore.setSuccess(
+        "Wszyscy gracze potwierdzili swoją gotowość, możesz rozpocząć grę! 🎉",
+        3000
+      )
+    : "";
+
+  return keys.every((id) => p[id]?.ready === true);
+});
+// Sprawdzamy, czy gracz jest gotowy
+const playerReady = computed(
+  () => players.value[sessionStore.playerId!!]?.ready ?? false
+);
+
+// Funkcja oznaczająca gracza jako gotowego
+const handleSetReady = async () => {
+  await setCurrentPlayerReady();
+};
+
+// Funkcja obsługująca rozpoczęcie kolejnej gry przez DJ-a (resetuje gotowość graczy)
+const startNextGameHandler = async () => {
+  await setSongSelection();
+  await resetReadyStatus();
+};
+
+// Inicjalizacja przy montowaniu widoku
 onMounted(() => {
   initSummary();
 });
 
-// Nasłuchujemy na zmiany statusu w store (np. "song_selection")
+// Nasłuch zmian statusu gry w store
 watch(
   () => sessionStore.gameStatus,
   (newStatus) => {
@@ -96,14 +142,58 @@ watch(
 .game-buttons {
   display: flex;
   width: 100%;
-
   align-items: center;
   justify-content: center;
   gap: 8px;
 }
+
+.btn-game {
+  color: #fff;
+  background: linear-gradient(145deg, #ffcc00, #ff9900);
+  border: 1px solid #ff6600;
+  box-shadow: 0 0.375rem 0 #cc5200, 0 0.625rem 1.25rem rgba(0, 0, 0, 0.3);
+  text-shadow: 2px 2px 0 #cc5200;
+  padding: 0.6rem 1rem;
+  font-family: inherit;
+  font-size: clamp(0.9rem, 1.2vw, 1rem);
+  cursor: pointer;
+  transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.1s ease;
+  border-radius: 4px;
+}
+
+/* Stan hover – jaśniejszy gradient oraz mniejsze cienie */
+.btn-game:hover {
+  background: linear-gradient(145deg, #ffdd33, #ffbb00);
+  box-shadow: 0 0.25rem 0 #cc5200, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
+}
+
+/* Stan aktywny – efekt wciśnięcia */
+.btn-game:active {
+  transform: scale(0.98);
+  box-shadow: 0 0.25rem 0 #cc5200, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
+}
+
+/* Jeśli przycisk nie ma klasy .active, wyglądamy go nieco wyszarzonym */
+.btn-game:not(.active) {
+  opacity: 0.7;
+}
+
+/* Aktywny przycisk – wyróżniony pełną przezroczystością (możesz dodatkowo zmodyfikować np. border lub cienie) */
+.btn-game.active {
+  opacity: 1;
+  background: linear-gradient(145deg, #ffcc00, #ff9900);
+  border: 1px solid #ff6600;
+  box-shadow: 0 0.375rem 0 #cc5200, 0 0.625rem 1.25rem rgba(0, 0, 0, 0.4);
+}
+
 .game-buttons .active {
   background-color: #ccc;
-  font-weight: bold;
+  color: yellow;
+}
+
+.player-ready-control {
+  margin: 1rem 0;
+  text-align: center;
 }
 
 button {
@@ -117,6 +207,7 @@ button {
   position: relative;
   cursor: pointer;
 }
+
 .btn-start {
   color: #fff;
   background: linear-gradient(145deg, #ffcc00, #ff9900);
@@ -129,5 +220,22 @@ button {
 .btn-start:hover {
   background: linear-gradient(145deg, #ffdd33, #ffbb00);
   box-shadow: 0 0.25rem 0 #cc5200, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
+}
+
+.btn-ready {
+  color: #fff;
+  background: linear-gradient(145deg, #00ccff, #0099ff);
+  border-color: #007acc;
+  box-shadow: 0 0.375rem 0 #005a99, 0 0.625rem 1.25rem rgba(0, 0, 0, 0.3);
+  text-shadow: 2px 2px 0 #005a99;
+  margin-bottom: 1rem;
+}
+
+.btn-ready:hover {
+  background: linear-gradient(145deg, #33ddff, #00bbff);
+  box-shadow: 0 0.25rem 0 #005a99, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
+}
+.finished-controls {
+  margin: 1rem;
 }
 </style>

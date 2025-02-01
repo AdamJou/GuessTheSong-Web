@@ -1,13 +1,16 @@
 <template>
   <!-- Tło -->
-  <Background />
+  <!-- <Background />-->
 
   <!-- Główny kontener wypełniający okno -->
   <!-- Kontener wycentrowany w pionie i poziomie (flex), 
          wewnątrz którego jest #root -->
   <div id="root">
     <!-- Właściwa logika aplikacji -->
-    <router-view v-if="initialized" />
+
+    <transition name="fade" mode="out-in">
+      <router-view v-if="initialized" />
+    </transition>
     <div v-if="showReturnButton" class="return-container">
       <p>Twoja gra została wstrzymana.</p>
       <button @click="resumeGame">Powróć do gry w pokoju {{ roomId }}</button>
@@ -134,6 +137,9 @@ const resumeGame = async () => {
     if (roundStatus) {
       redirectToCurrentGameState(sessionStore.gameStatus, roundStatus);
     }
+  } else {
+    router.push("/");
+    sessionStore.clearRoomId();
   }
 };
 
@@ -173,19 +179,12 @@ onMounted(async () => {
 watch(
   [currentGame, currentRound, gameStatus],
   async ([newCurrentGame, newCurrentRound, newGameStatus]) => {
-    console.log("Zmiana wartości:");
-    console.log("currentGame:", newCurrentGame);
-    console.log("currentRound:", newCurrentRound);
-    console.log("gameStatus:", newGameStatus);
-
     if (newGameStatus === "voting") {
       const fetchedRoundStatus = await fetchRoundStatus();
       const djId = await fetchDjId(roomId.value);
       if (djId) {
-        console.log("DJ ID:", djId);
         sessionStore.djId = djId;
       }
-      console.log("Fetched roundStatus:", fetchedRoundStatus);
       redirectToCurrentGameState(newGameStatus, fetchedRoundStatus);
     }
   },
@@ -209,12 +208,6 @@ const redirectToCurrentGameState = async (
   roundStatus: string | null
 ) => {
   if (!roomId.value) return;
-  console.log(djId.value, playerId.value);
-  console.log("Przekierowanie na podstawie gameStatus:", gameStatus);
-  console.log("currentGame:", currentGame.value);
-  console.log("currentRound:", currentRound.value);
-  console.log("roundStatus:", roundStatus);
-
   switch (gameStatus) {
     case "waiting":
       router.push({ name: "Lobby", params: { roomId: roomId.value } });
@@ -258,7 +251,7 @@ const redirectToCurrentGameState = async (
       router.push({ name: "/home" });
     default:
       router.push("/home");
-      console.warn("Nieznany status gry:", gameStatus);
+      sessionStore.clearRoomId();
   }
 };
 </script>
@@ -278,6 +271,20 @@ body {
   justify-content: center;
   align-items: cetner;
   font-size: 14px;
+  background-color: rgb(13, 13, 58);
+
+  /* Tworzymy efekt winiety */
+  background-image: radial-gradient(
+    ellipse at center,
+    /* eliptyczny gradient skoncentrowany w środku */ rgba(56, 38, 191, 0.059)
+      40%,
+    /* przezroczyste (jaśniejsze) centrum do 40% */ rgba(13, 13, 58, 0.95) 100%
+      /* ku krawędziom kolor przechodzi w niemal pełną intensywność */
+  );
+
+  /* Upewniamy się, że tło pokrywa cały obszar */
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
 #app {
@@ -285,16 +292,51 @@ body {
   width: 100%;
   max-width: 1200px; /* szerokość max. np. na duże monitory */
   margin: 0 auto 0 auto; /* wycentrowanie + odstęp od góry */
-  padding: 2rem 0; /* drobny padding z boków, żeby nie kleiło się do krawędzi */
   text-align: center;
   color: #2c3e50;
   display: flex;
   justify-content: center;
   align-items: cetner;
   max-width: 100vw;
+  max-height: 100vh;
   overflow-y: auto;
 }
 
+/* Dla przeglądarek WebKit (Chrome, Safari, Opera) */
+::-webkit-scrollbar {
+  width: 8px; /* Szerokość pionowego scrollbara */
+  height: 8px; /* Wysokość poziomego scrollbara */
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; /* Tło scrollbara, można ustawić inny kolor jeśli chcesz */
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #add8e6; /* Jasnoniebieski kolor */
+  border-radius: 999px; /* Ustawia maksymalne zaokrąglenie */
+  border: 2px solid transparent;
+  background-clip: content-box; /* Zapobiega nakładaniu się border na kolor thumb */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #9ac0d4; /* Opcjonalny efekt hover */
+}
+
+/* Dla Firefoxa */
+* {
+  scrollbar-width: thin; /* Ustawia cienki wygląd scrollbara */
+  scrollbar-color: #add8e6 transparent; /* Kolor thumb oraz tła */
+  font-weight: normal;
+}
+
+button {
+  font-family: "Bungee", sans-serif;
+}
+input {
+  font-family: "Montserrat", sans-serif;
+  border-radius: 5px;
+}
 /* Loader pełnoekranowy */
 .global-loader {
   position: fixed;
@@ -395,5 +437,75 @@ h3 {
   font-weight: normal;
 }
 
-/* Kontynuuj dla h4, h5, h6 według potrzeb */
+/* Definicje klas CSS odpowiadające animacji */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 1s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 1s ease;
+}
+.slide-enter-from {
+  transform: translateX(100%);
+}
+.slide-leave-to {
+  transform: translateX(-100%);
+}
+/* ---- Animacje przejścia dla modal-content ---- */
+.cartoon-modal-enter-from,
+.cartoon-modal-leave-to {
+  opacity: 0;
+  transform: scale(0.8);
+}
+.cartoon-modal-enter-active {
+  animation: popIn 0.5s ease forwards;
+}
+.cartoon-modal-leave-active {
+  animation: popOut 0.3s ease forwards;
+}
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes popOut {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+.btn-submit {
+  color: #fff;
+  height: 100%;
+  background: linear-gradient(145deg, #00ff99, #00cc88);
+  border: 1px solid #00aa66;
+  box-shadow: 0 0.375rem 0 #009966, 0 0.625rem 1.25rem rgba(0, 0, 0, 0.3);
+  text-shadow: 2px 2px 0 #009966;
+  /* Możesz dodać padding, font-size lub inne właściwości według potrzeb */
+}
+
+.btn-submit:hover {
+  background: linear-gradient(145deg, #33ffbb, #00dd99);
+  box-shadow: 0 0.25rem 0 #009966, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
+}
 </style>

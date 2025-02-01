@@ -16,12 +16,17 @@
       <div v-else>
         <!-- Nawigacja po rundach (opcjonalna, jeśli > 1) -->
         <div class="round-navigation" v-if="rounds.length > 1">
-          <button :disabled="currentRoundIndex === 0" @click="prevRound">
+          <button
+            :disabled="currentRoundIndex === 0"
+            @click="prevRound"
+            class="btn-prev"
+          >
             Poprzednia runda
           </button>
           <button
             :disabled="currentRoundIndex === rounds.length - 1"
             @click="nextRound"
+            class="btn-next"
           >
             Następna runda
           </button>
@@ -164,7 +169,6 @@ function prevRound() {
 .round-navigation button {
   background-color: #2a2b36;
   color: #fff;
-  border: 1px solid #444;
   padding: 0.6rem 1rem;
   cursor: pointer;
   font-family: inherit;
@@ -198,11 +202,12 @@ hr {
 .votes ul {
   list-style: none;
   padding-left: 0;
+  height: 100%;
   margin: 0;
 }
 
 .votes li {
-  margin-bottom: 0.5rem;
+  margin-bottom: 1.5rem;
   font-size: clamp(1rem, 1.5vw, 1.2rem);
 }
 
@@ -220,8 +225,44 @@ hr {
 }
 
 strong {
-  font-size: 0.7em;
   color: gray;
+}
+/* Stylowanie przycisków "Poprzednia runda" oraz "Następna runda" */
+.btn-prev,
+.btn-next {
+  color: #fff;
+  background: linear-gradient(145deg, #00ff99, #00cc88);
+  border: 1px solid #00aa66;
+  box-shadow: 0 0.375rem 0 #009966, 0 0.625rem 1.25rem rgba(0, 0, 0, 0.3);
+  text-shadow: 2px 2px 0 #009966;
+  padding: 0.6rem 1rem;
+  font-family: inherit;
+  font-size: clamp(0.9rem, 1.2vw, 1rem);
+  cursor: pointer;
+  transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.1s ease;
+  border-radius: 4px;
+}
+
+/* Stan hover (najechanie kursorem) */
+.btn-prev:hover:not(:disabled),
+.btn-next:hover:not(:disabled) {
+  background: linear-gradient(145deg, #33ffbb, #00dd99);
+  box-shadow: 0 0.25rem 0 #009966, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
+}
+
+/* Stan aktywny (kliknięty) */
+.btn-prev:active,
+.btn-next:active {
+  transform: scale(0.98);
+  /* Opcjonalnie można zmodyfikować cienie, jeśli chcesz uzyskać inny efekt */
+  box-shadow: 0 0.25rem 0 #009966, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
+}
+
+/* Stan zablokowany */
+.btn-prev:disabled,
+.btn-next:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Dodatkowe media queries dla większych ekranów */

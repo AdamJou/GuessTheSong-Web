@@ -69,7 +69,7 @@
             </div>
           </li>
         </ul>
-        <p v-else>Loading player statuses...</p>
+        <p v-else>Ładowanie...</p>
       </div>
     </section>
   </div>
@@ -210,6 +210,9 @@ watch(
 </script>
 
 <style scoped>
+h1 {
+  color: white;
+}
 .song-selection {
   text-align: center;
   max-width: 100vw;

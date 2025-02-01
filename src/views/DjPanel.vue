@@ -169,7 +169,6 @@ const submitSelectedSong = async () => {
 
     await update(playerSongRef, { wasPlayed: true });
 
-    alert("Song submitted to the current round.");
     router.push({ name: "PlaySong", params: { roomId } });
   } catch (error) {
     console.error("Error submitting song to current round:", error);
@@ -189,13 +188,15 @@ const submitSelectedSong = async () => {
 
 ul {
   list-style-type: none;
-  padding: 0;
+  padding: 0 1rem;
+  max-height: 50vh;
+  overflow: auto;
 }
 
 .song-item {
   margin: 10px 0;
   border: 1px solid #ccc;
-  padding: 10px;
+  padding: 1rem;
   border-radius: 5px;
   cursor: pointer;
 }
