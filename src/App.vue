@@ -231,6 +231,7 @@ const redirectToCurrentGameState = async (
           roundStatus === "song_selection"
         ) {
           console.log("[Redirect] DJ - DjPanel");
+          showReturnButton.value = false;
           router.push({ name: "DjPanel", params: { roomId: roomId.value } });
         } else if (roundStatus === "voting") {
           console.log("[Redirect] DJ - PlaySong");
@@ -247,11 +248,10 @@ const redirectToCurrentGameState = async (
       break;
     case "finished":
       sessionStore.clearRoomId();
-
       router.push({ name: "/home" });
     default:
       router.push("/home");
-      sessionStore.clearRoomId();
+    //sessionStore.clearRoomId();
   }
 };
 </script>
@@ -272,7 +272,6 @@ body {
   align-items: cetner;
   font-size: 14px;
   background-color: rgb(13, 13, 58);
-
   /* Tworzymy efekt winiety */
   background-image: radial-gradient(
     ellipse at center,
@@ -445,6 +444,9 @@ h3 {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+.fade-move {
+  transition: transform 0.5s ease;
 }
 .slide-enter-active,
 .slide-leave-active {
