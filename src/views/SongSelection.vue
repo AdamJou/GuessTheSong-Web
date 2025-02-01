@@ -216,6 +216,7 @@ h1 {
 .song-selection {
   text-align: center;
   max-width: 100vw;
+  overflow-x: hidden;
 }
 
 form div {

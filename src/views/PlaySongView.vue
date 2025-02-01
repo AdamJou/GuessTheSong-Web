@@ -319,6 +319,7 @@ const goBackToSongSelection = async () => {
   text-align: center;
   color: white;
   max-width: 100vw;
+  overflow-x: hidden;
 }
 
 h1 {

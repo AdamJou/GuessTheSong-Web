@@ -114,6 +114,10 @@ const handleStartGame = () => {
 
 // Funkcja potwierdzająca wybór trybu i rozpoczynająca grę
 const confirmStartGame = async () => {
+  loadingStore.startLoading();
+
+  await new Promise((r) => setTimeout(r, 2000));
+
   try {
     const roomId = await createGame(gameMode.value);
     sessionStore.setRoomId(roomId);
@@ -123,6 +127,8 @@ const confirmStartGame = async () => {
   } catch (error) {
     console.error("Error starting game:", error);
     alert("Wystąpił błąd podczas tworzenia gry. Spróbuj ponownie.");
+  } finally {
+    loadingStore.stopLoading();
   }
 };
 

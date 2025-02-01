@@ -213,6 +213,7 @@ async function submitSelectedSong() {
   text-align: center;
   max-width: 100vw;
   padding: 1rem;
+  overflow-x: hidden;
   margin-bottom: 3rem;
 }
 
