@@ -184,6 +184,8 @@ const submitSelectedSong = async () => {
   text-align: center;
   margin-top: 50px;
   color: white;
+  overflow-x: hidden;
+  min-height: 90vh;
 }
 
 ul {
