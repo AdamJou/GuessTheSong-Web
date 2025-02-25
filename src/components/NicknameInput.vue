@@ -21,16 +21,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { getAuth, signInAnonymously } from "firebase/auth";
-import { getDatabase, ref as dbRef, set } from "firebase/database";
+import { getDatabase, ref as dbRef, set, get } from "firebase/database";
 import { useSessionStore } from "@/stores/session";
 import { useLoadingStore } from "@/stores/useLoadingStore";
-const loadingStore = useLoadingStore();
 
+const loadingStore = useLoadingStore();
 const router = useRouter();
 const sessionStore = useSessionStore();
+
 const nickname = ref(sessionStore.nickname || "");
 const error = ref("");
 
@@ -38,27 +39,70 @@ const buttonClass = computed(() => {
   return nickname.value.length >= 3 ? "active-button" : "disabled-button";
 });
 
+const redirectAfterNickname = async () => {
+  const redirectPath = sessionStorage.getItem("redirectAfterNickname");
+  if (redirectPath) {
+    sessionStorage.removeItem("redirectAfterNickname");
+    await router.push(redirectPath);
+  } else {
+    await router.push("/home");
+  }
+};
+
+const checkPlayerNickname = async () => {
+  try {
+    const auth = getAuth();
+    let userId = sessionStore.playerId;
+    if (!userId) {
+      const result = await signInAnonymously(auth);
+      userId = result.user.uid;
+      sessionStore.setPlayerId(userId);
+      console.log("Anonymous user created with ID:", userId);
+    }
+    const db = getDatabase();
+    const playerRef = dbRef(db, `players/${userId}`);
+    const snapshot = await get(playerRef);
+    if (snapshot.exists()) {
+      const data = snapshot.val();
+      if (data.nickname && data.nickname.trim().length >= 3) {
+        sessionStore.setNickname(data.nickname);
+        nickname.value = data.nickname;
+        if (data.currentGame && data.currentGame.trim().length > 0) {
+          sessionStore.setRoomId(data.currentGame);
+        }
+        console.log("Nickname found in DB:", data.nickname);
+        await redirectAfterNickname();
+        return;
+      }
+    }
+  } catch (err) {
+    console.error("Error checking player nickname:", err);
+  }
+};
+
+onMounted(async () => {
+  await checkPlayerNickname();
+});
+
 const saveNickname = async () => {
   error.value = "";
-
   if (nickname.value.trim().length < 3) {
     error.value = "Nickname must be at least 3 characters long.";
     return;
   }
   loadingStore.startLoading();
-
   try {
     const auth = getAuth();
     let userId = sessionStore.playerId;
-
     if (!userId) {
       const result = await signInAnonymously(auth);
       userId = result.user.uid;
+      sessionStore.setPlayerId(userId);
       console.log("Anonymous user created with ID:", userId);
     }
-
     const db = getDatabase();
     const playerRef = dbRef(db, `players/${userId}`);
+
     await set(playerRef, {
       nickname: nickname.value.trim(),
       currentGame: "",
@@ -66,14 +110,7 @@ const saveNickname = async () => {
 
     sessionStore.setNickname(nickname.value.trim());
     sessionStore.setPlayerId(userId);
-
-    const redirectPath = sessionStorage.getItem("redirectAfterNickname");
-    if (redirectPath) {
-      sessionStorage.removeItem("redirectAfterNickname");
-      await router.push(redirectPath);
-    } else {
-      await router.push("/home");
-    }
+    await redirectAfterNickname();
   } catch (err) {
     console.error("Error saving nickname:", err);
     error.value = "An error occurred. Please try again.";
@@ -84,26 +121,19 @@ const saveNickname = async () => {
 </script>
 
 <style scoped>
-/* 
-  Base container styles:
-  - Use flexbox for easy centering.
-  - A top margin instead of fixed positioning, so the page can scroll on small screens.
-*/
 .nickname-input {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 10vh auto 0; /* Top margin helps move it down on larger screens. */
+  margin: 10vh auto 0;
   padding: 1rem;
-  max-width: 25rem; /* ~400px */
+  max-width: 25rem;
   width: 100%;
   text-align: center;
   box-sizing: border-box;
 }
 
-/* Smaller screens: reduce margin-top so the form is higher (avoid keyboard overlap). */
 @media (max-width: 30rem) {
-  /* ~480px */
   .nickname-input {
     margin-bottom: 30vh;
   }
@@ -122,31 +152,28 @@ const saveNickname = async () => {
   align-items: center;
 }
 
-/* Input styles */
 .nickname-input input {
   width: 100%;
   padding: 0.75rem;
   font-size: 1rem;
-  margin-bottom: 0.625rem; /* 10px */
+  margin-bottom: 0.625rem;
   border: 1px solid #ccc;
-  border-radius: 0.3125rem; /* 5px */
+  border-radius: 0.3125rem;
   box-sizing: border-box;
 }
 
-/* Error message style */
 .error-message {
   color: red;
-  font-size: 0.875rem; /* 14px */
-  margin-top: 0.3125rem; /* 5px */
+  font-size: 0.875rem;
+  margin-top: 0.3125rem;
 }
 
-/* Base button styles */
 button {
-  padding: 0.875rem 1.875rem; /* 14px 30px */
-  font-size: 1.125rem; /* 18px */
+  padding: 0.875rem 1.875rem;
+  font-size: 1.125rem;
   text-transform: uppercase;
-  border-radius: 0.9375rem; /* 15px */
-  border: 0.25rem solid; /* 4px */
+  border-radius: 0.9375rem;
+  border: 0.25rem solid;
   transition: all 0.3s ease-in-out;
   letter-spacing: 2px;
   position: relative;
@@ -154,7 +181,6 @@ button {
   margin-top: 1rem;
 }
 
-/* Disabled button (nickname < 3 characters) */
 button.disabled-button {
   background: linear-gradient(145deg, #aaaaaa, #888888);
   border-color: #666666;
@@ -163,7 +189,6 @@ button.disabled-button {
   box-shadow: none;
 }
 
-/* Active button (nickname >= 3 characters) */
 button.active-button {
   color: #fff;
   background: linear-gradient(145deg, #ffcc00, #ff9900);
@@ -184,20 +209,17 @@ button.active-button:active {
   transform: translateY(0.25rem);
 }
 
-/* Bouncing animation */
 @keyframes bounce {
   0%,
   100% {
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-0.3125rem); /* -5px */
+    transform: translateY(-0.3125rem);
   }
 }
 
-/* Larger screens (tablets, desktops) adjustments */
 @media (min-width: 48rem) {
-  /* ~768px */
   .nickname-input {
     margin-top: 5vh;
   }
@@ -205,18 +227,4 @@ button.active-button:active {
     font-size: 2rem;
   }
 }
-
-/* 
-  Optional: If you want to factor in safe-area insets on modern mobile devices.
-  This can help ensure content doesn’t go under the home indicator on iOS, etc.
-*/
-/*
-@supports (height: 100dvh) {
-  .nickname-input {
-    min-height: calc(
-      100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)
-    );
-  }
-}
-*/
 </style>

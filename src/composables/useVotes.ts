@@ -12,7 +12,6 @@ export function useVotes() {
   const players = computed<Players>(() => sessionStore.players);
   const playerId = computed(() => sessionStore.playerId);
 
-  // Zachowujemy obecny typ, aby inne komponenty nie zgłaszały błędów
   const votes = ref<Record<string, string>>({});
   const hasVoted = ref(false);
   const votedPlayer = ref<string | null>(null);
@@ -28,16 +27,13 @@ export function useVotes() {
       `rooms/${roomId.value}/games/${currentGame.value}/rounds/${currentRound.value}/votes`
     );
 
-    // Usunięcie poprzedniej subskrypcji, jeśli istnieje
     unsubscribeFromVotes();
 
     unsubscribeVotes = onValue(votesRef, (snapshot) => {
       const voteData = snapshot.val();
 
-      // Ustawienie wartości głosów - jeśli brak danych, ustawiamy pusty obiekt
       votes.value = voteData && typeof voteData === "object" ? voteData : {};
 
-      // Sprawdzenie, czy obecny gracz już zagłosował
       if (playerId.value && votes.value[playerId.value]) {
         hasVoted.value = true;
         votedPlayer.value =
@@ -56,7 +52,6 @@ export function useVotes() {
     }
   };
 
-  // Monitorujemy zmiany w grze i rundzie, natychmiast subskrybujemy do głosów
   watch(
     [currentGame, currentRound],
     () => {
@@ -65,14 +60,12 @@ export function useVotes() {
     { immediate: true }
   );
 
-  // Resetowanie danych głosowania
   const resetVotes = () => {
     hasVoted.value = false;
     votedPlayer.value = null;
     votes.value = {};
   };
 
-  // Pobieranie nazwy gracza na podstawie ID
   const getPlayerName = (id: string): string =>
     players.value?.[id]?.name || "Unknown";
 

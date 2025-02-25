@@ -1,20 +1,15 @@
 <template>
   <div class="game-summary">
-    <!-- Jeśli nie ma danych gry, pokazujemy komunikat -->
     <div v-if="!gameData">
       <p class="no-data">Brak danych gry do wyświetlenia.</p>
     </div>
-    <!-- Jeśli dane są, wyświetlamy podsumowanie -->
     <div v-else>
       <h2>Gra {{ gameData.id.replace(/\D/g, "") }}</h2>
 
-      <!-- Jeśli nie ma rund, pokazujemy komunikat -->
       <div v-if="rounds.length === 0">
         <p class="no-rounds">Brak rund w tej grze.</p>
       </div>
-      <!-- Wyświetlamy rundy -->
       <div v-else>
-        <!-- Nawigacja po rundach (opcjonalna, jeśli > 1) -->
         <div class="round-navigation" v-if="rounds.length > 1">
           <button
             :disabled="currentRoundIndex === 0"
@@ -32,7 +27,6 @@
           </button>
         </div>
 
-        <!-- Aktualna runda -->
         <div v-if="currentRound">
           <h3>Runda {{ currentRound.id.replace(/\D/g, "") }}</h3>
           <p>
@@ -45,7 +39,6 @@
             </span>
           </p>
 
-          <!-- Lista głosów -->
           <div class="votes">
             <hr />
             <h4>Głosy</h4>
@@ -84,7 +77,6 @@ const props = defineProps<{
   gameData: Game | null;
 }>();
 
-// Przerabiamy rundy w gameData na tablicę
 const rounds = computed<Round[]>(() => {
   if (!props.gameData) return [];
   const raw = props.gameData.rounds || {};
@@ -96,7 +88,6 @@ const currentRound = computed<Round | null>(() => {
   return rounds.value[currentRoundIndex.value] || null;
 });
 
-// Sterowanie "następna/poprzednia" runda
 function nextRound() {
   if (currentRoundIndex.value < rounds.value.length - 1) {
     currentRoundIndex.value++;
@@ -110,27 +101,26 @@ function prevRound() {
 </script>
 
 <style scoped>
-/* Główny kontener: ciemne tło, wyśrodkowanie, neonowy klimat */
 .game-summary {
   max-width: 500px;
-  margin: 1rem 1rem; /* Wyśrodkowanie kontenera */
+  margin: 1rem 1rem; 
   background-color: #1e1f29;
   border: 1px solid #2a2b36;
   border-radius: 8px;
   color: #ffffff;
   font-family: "Bungee", sans-serif;
-  padding: 1rem; /* Dodanie wewnętrznego odstępu */
+  padding: 1rem;
 }
 
-/* Tytuł główny (Podsumowanie gry) */
+
 .game-summary h2 {
   font-size: clamp(1.5rem, 2.5vw, 2rem);
   margin-bottom: 1.2rem;
-  color: #ffcc00; /* Żółty / złoty odcień */
+  color: #ffcc00; 
   text-align: center;
 }
 
-/* Brak danych lub rund */
+
 .no-data,
 .no-rounds {
   text-align: center;
@@ -138,26 +128,26 @@ function prevRound() {
   font-size: clamp(1rem, 1.5vw, 1.2rem);
 }
 
-/* Podtytuł rundy */
+
 .game-summary h3 {
   font-size: clamp(1.2rem, 2vw, 1.5rem);
   margin-bottom: 0.8rem;
-  color: #00ff99; /* Neonowy zielony */
+  color: #00ff99; 
   text-align: center;
 }
 
-/* Pojedyncze informacje o utworze/ graczu */
+
 .song-title,
 .player-nickname {
   font-style: italic;
 }
 
 .player-nickname {
-  color: #00ff99; /* Neonowy zielony */
+  color: #00ff99; 
   font-size: clamp(0.9rem, 1.5vw, 1.1rem);
 }
 
-/* Nawigacja po rundach (przyciski) */
+
 .round-navigation {
   display: flex;
   padding: 1rem;
@@ -190,7 +180,6 @@ hr {
   margin: 0.5rem 0;
 }
 
-/* Sekcja głosów */
 .votes h4 {
   font-size: clamp(1.2rem, 2vw, 1.8rem);
   margin-top: 0.6rem;
@@ -198,7 +187,6 @@ hr {
   color: #ffcc00;
 }
 
-/* Lista głosów */
 .votes ul {
   list-style: none;
   padding-left: 0;
@@ -211,7 +199,7 @@ hr {
   font-size: clamp(1rem, 1.5vw, 1.2rem);
 }
 
-/* Kolorowanie poprawnego / błędnego głosu */
+
 .correct {
   color: #00ff99;
 }
@@ -227,7 +215,7 @@ hr {
 strong {
   color: gray;
 }
-/* Stylowanie przycisków "Poprzednia runda" oraz "Następna runda" */
+
 .btn-prev,
 .btn-next {
   color: #fff;
@@ -243,29 +231,24 @@ strong {
   border-radius: 4px;
 }
 
-/* Stan hover (najechanie kursorem) */
 .btn-prev:hover:not(:disabled),
 .btn-next:hover:not(:disabled) {
   background: linear-gradient(145deg, #33ffbb, #00dd99);
   box-shadow: 0 0.25rem 0 #009966, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
 }
 
-/* Stan aktywny (kliknięty) */
 .btn-prev:active,
 .btn-next:active {
   transform: scale(0.98);
-  /* Opcjonalnie można zmodyfikować cienie, jeśli chcesz uzyskać inny efekt */
   box-shadow: 0 0.25rem 0 #009966, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
 }
 
-/* Stan zablokowany */
 .btn-prev:disabled,
 .btn-next:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* Dodatkowe media queries dla większych ekranów */
 @media (min-width: 768px) {
   .game-summary {
     max-width: 700px;

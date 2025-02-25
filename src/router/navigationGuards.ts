@@ -11,25 +11,20 @@ export const navigationGuard = async (
   const sessionStore = useSessionStore();
   const { playerId, nickname, roomId } = sessionStore;
   console.log("GS", sessionStore.gameStatus);
-  // Obsługa przypadku: użytkownik próbuje wejść do pokoju po linku
   if (to.params.roomId) {
-    // Jeśli brakuje nicku lub playerId, przekieruj na NicknameInput
     if (!playerId || !nickname) {
       console.log("No playerId or nickname. Redirecting to NicknameInput.");
       sessionStorage.setItem("redirectAfterNickname", to.fullPath);
       return next({ name: "NicknameInput" });
     }
 
-    // Jeśli roomId z linku różni się od obecnego, ustaw nowe roomId
     if (roomId !== to.params.roomId) {
       sessionStore.setRoomId(to.params.roomId as string);
     }
 
-    // Pozwól przejść do pokoju
     return next();
   }
 
-  // Obsługa przypadku: brak playerId (użytkownik musi najpierw ustawić nick)
   if (!playerId || !nickname) {
     if (to.name !== "NicknameInput") {
       console.log("Redirecting to NicknameInput.");
@@ -38,6 +33,5 @@ export const navigationGuard = async (
     return next();
   }
 
-  // Jeśli wszystkie warunki są spełnione, pozwól przejść dalej
   next();
 };

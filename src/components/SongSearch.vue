@@ -4,14 +4,11 @@
       <p>Wyszukiwanie...</p>
     </div>
 
-    <!-- 2) Gracz ma już piosenkę w bazie -->
     <div v-else-if="hasSubmitted">
       <h3>Wybrany utwór</h3>
       <p>{{ playerSongs[playerId].songTitle }}</p>
-      <!-- Możesz tu dodać informację, że piosenki nie da się zmienić itp. -->
     </div>
 
-    <!-- 3) Gracz NIE ma piosenki (po odczycie z bazy) => pokazujemy wyszukiwanie i "Submit" -->
     <div v-else>
       <div class="search-bar">
         <input
@@ -28,7 +25,6 @@
       <p v-if="error" class="error">{{ error }}</p>
       <p v-if="loading">Wyszkiwanie...</p>
 
-      <!-- Lista wyników wyszukiwania -->
       <ul v-if="!loading && videos.length">
         <li
           v-for="video in videos"
@@ -42,12 +38,11 @@
         >
           <img :src="video.snippet.thumbnails.default.url" alt="Thumbnail" />
           <div class="title">
-            <p>{{ video.snippet.title }} {{ video.snippet.channelTitle }}</p>
+            <p>{{ video.snippet.title }}</p>
           </div>
         </li>
       </ul>
 
-      <!-- Informacja o wybranym utworze i przycisk zatwierdzania -->
       <Transition name="cartoon-modal" appear>
         <div v-if="selectedSong">
           <button @click="submitSelectedSong" class="btn-submit">
@@ -60,51 +55,35 @@
 </template>
 
 <script setup lang="ts">
-/**
- * SongSearch.vue
- * Komponent, który:
- *  - subskrybuje playerSongs w Realtime Database
- *  - sprawdza, czy gracz ma już wybraną piosenkę
- *  - jeśli tak, wyświetla info o piosence
- *  - jeśli nie, daje możliwość wyszukiwania i wybrania piosenki
- */
-
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { getDatabase, ref as dbRef, onValue, off } from "firebase/database";
 
-// Usługi/aplikacje
 import { fetchYouTubeVideos } from "@/yt";
 import { updatePlayerSong } from "@/services/songService";
 import { useSessionStore } from "@/stores/session";
 import { YouTubeVideo } from "@/types/types";
-// 1. Pobieramy dane z sessionStore
+
 const sessionStore = useSessionStore();
 const roomId = sessionStore.roomId as string;
 const playerId = sessionStore.playerId as string;
 const currentGame = computed(() => sessionStore.currentGame as string);
 
-// 2. Stan wyszukiwania YouTube
 const query = ref("");
 const videos = ref<YouTubeVideo[]>([]);
 const loading = ref(false);
 const error = ref("");
 const selectedSong = ref<YouTubeVideo | null>(null);
 
-// 3. Stan piosenek w Firebase
-//    Struktura: { player1: { songId: "...", songTitle: "..." }, player2: { ... }, ... }
 const playerSongs = ref<Record<string, { songId: string; songTitle: string }>>(
   {}
 );
 
-// 4. Flaga, czy wciąż czekamy na dane z Firebase
 const fetchingPlayerSongs = ref(true);
 
-// 5. Czy aktualny gracz (playerId) ma już wybraną piosenkę?
 const hasSubmitted = computed(() => {
   return !!playerSongs.value[playerId];
 });
 
-// 6. Subskrypcja do zmian w bazie
 let unsubscribe: (() => void) | null = null;
 
 function subscribeToPlayerSongs() {
@@ -112,17 +91,13 @@ function subscribeToPlayerSongs() {
   const path = `rooms/${roomId}/games/${currentGame.value}/playerSongs`;
   const songsRef = dbRef(db, path);
 
-  // Na wszelki wypadek, jeśli było wcześniej zarejestrowane "onValue", odpinamy
   unsubscribeFromPlayerSongs();
 
-  // Ustawiamy subskrypcję
   const offFn = onValue(songsRef, (snapshot) => {
     playerSongs.value = snapshot.exists() ? snapshot.val() : {};
-    // Gdy tylko mamy dane (po raz pierwszy lub przy każdej zmianie), możemy powiedzieć:
     fetchingPlayerSongs.value = false;
   });
 
-  // Zapamiętujemy funkcję do odsubskrybowania
   unsubscribe = () => {
     off(songsRef, "value", offFn);
   };
@@ -135,15 +110,11 @@ function unsubscribeFromPlayerSongs() {
   }
 }
 
-// 7. Gdy zmienia się currentGame, odpinamy poprzednią subskrypcję i ustawiamy nową
 watch(
   currentGame,
   (newGame) => {
-    // Reset flagi ładowania
     fetchingPlayerSongs.value = true;
-    // Odsubskrybowujemy starą
     unsubscribeFromPlayerSongs();
-    // Subskrybujemy nową
     if (newGame) {
       subscribeToPlayerSongs();
     }
@@ -151,12 +122,9 @@ watch(
   { immediate: true }
 );
 
-// 8. Przy odmontowaniu komponentu odpinamy się od Firebase
 onBeforeUnmount(() => {
   unsubscribeFromPlayerSongs();
 });
-
-// 9. Funkcje logiki wyszukiwania i wyboru piosenki
 
 async function search() {
   if (!query.value.trim()) {
@@ -166,11 +134,10 @@ async function search() {
   try {
     loading.value = true;
     error.value = "";
-    // Możesz zmienić liczbę wyników (tu: 10)
     videos.value = await fetchYouTubeVideos(
       query.value,
       import.meta.env.VITE_YOUTUBE_API_KEY,
-      2
+      4
     );
   } catch (err) {
     console.error("Search failed:", err);
@@ -284,9 +251,9 @@ ul {
 
 .video-item img {
   width: 80px;
-  height: auto; /* Maintain aspect ratio */
-  aspect-ratio: 4 / 3; /* Set the desired aspect ratio */
-  object-fit: cover; /* Ensure content fills the box while maintaining the ratio */
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
 }
 
 .error {

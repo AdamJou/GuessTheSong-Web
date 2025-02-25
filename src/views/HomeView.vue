@@ -3,15 +3,16 @@
     <section v-if="!roomId">
       <h1>Czyja To Melodia?</h1>
       <div class="buttons-container">
-        <!-- Po kliknięciu otwieramy modal z opcją trybu gry -->
         <button @click="handleStartGame" class="btn-start">Utwórz grę</button>
         <button @click="showJoinGameModal = true" class="btn-join">
           Dołącz do gry
         </button>
       </div>
     </section>
+    <section v-else>
+      <button @click="resumeGame">Resume</button>
+    </section>
 
-    <!-- Modal do dołączania do gry -->
     <div
       v-if="showJoinGameModal"
       class="modal"
@@ -37,7 +38,6 @@
       </transition>
     </div>
 
-    <!-- Modal do wyboru trybu gry przy tworzeniu pokoju -->
     <div
       v-if="showStartGameModal"
       class="modal"
@@ -47,7 +47,6 @@
         <div class="modal-content">
           <h2>Wybierz tryb gry</h2>
           <div class="toggle-container">
-            <!-- Etykieta może być w języku polskim, a wartość pozostaje zgodna z typem GameMode -->
             <label class="toggle-option">
               <input
                 type="radio"
@@ -85,34 +84,119 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { createGame, joinGame } from "@/services/gameService";
 import { useSessionStore } from "@/stores/session";
 import { useErrorStore } from "@/stores/useErrorStore";
 import { useLoadingStore } from "@/stores/useLoadingStore";
+import { getDatabase, ref as dbRef, get } from "firebase/database";
 
 const router = useRouter();
 const sessionStore = useSessionStore();
 const errorStore = useErrorStore();
 const loadingStore = useLoadingStore();
-const roomId = sessionStore.roomId;
+const roomId = ref(sessionStorage.getItem("roomId") || "");
 
-// Modal dla dołączania do gry
+const currentGame = computed(() => sessionStore.currentGame);
+const currentRound = computed(() => sessionStore.currentRound);
+const gameStatus = computed(() => sessionStore.gameStatus);
+const playerId = computed(() => sessionStorage.getItem("playerId"));
+const djId = computed(() => sessionStore.djId);
+
 const showJoinGameModal = ref(false);
 const roomIdInput = ref("");
 
-// Modal dla opcji przy tworzeniu gry
 const showStartGameModal = ref(false);
-// Tryb gry: "razem" (domyślnie) lub "osobno"
 const gameMode = ref<"together" | "separate">("together");
 
-// Funkcja otwierająca modal do wyboru trybu gry
+const resumeGame = async () => {
+  if (sessionStore.gameStatus === "waiting") {
+    redirectToCurrentGameState(sessionStore.gameStatus, null);
+  }
+
+  if (sessionStore.gameStatus) {
+    const roundStatus = await fetchRoundStatus();
+
+    if (roundStatus) {
+      redirectToCurrentGameState(sessionStore.gameStatus, roundStatus);
+    }
+  } else {
+    router.push("/");
+    sessionStore.clearRoomId();
+  }
+};
+
+const redirectToCurrentGameState = async (
+  gameStatus: string,
+  roundStatus: string | null
+) => {
+  if (!roomId.value) return;
+  switch (gameStatus) {
+    case "waiting":
+      router.push({ name: "Lobby", params: { roomId: roomId.value } });
+      break;
+    case "song_selection":
+      router.push({ name: "SongSelection", params: { roomId: roomId.value } });
+      break;
+    case "voting":
+      if (playerId.value !== djId.value) {
+        router.push({ name: "Voting", params: { roomId: roomId.value } });
+      } else {
+        if (
+          roundStatus === "waiting" ||
+          roundStatus === "completed" ||
+          roundStatus === "song_selection"
+        ) {
+          router.push({ name: "DjPanel", params: { roomId: roomId.value } });
+        } else if (roundStatus === "voting") {
+          router.push({ name: "PlaySong", params: { roomId: roomId.value } });
+        } else {
+          console.log("roundStatus", roundStatus);
+        }
+      }
+      break;
+    case "summary":
+      router.push({ name: "Summary", params: { roomId: roomId.value } });
+      break;
+    case "finished":
+      sessionStore.clearRoomId();
+      router.push({ name: "/home" });
+    default:
+      router.push("/home");
+    //sessionStore.clearRoomId();
+  }
+};
+
+const fetchRoundStatus = async () => {
+  if (!roomId.value || !currentGame.value || !currentRound.value) {
+    console.warn("Brak danych do pobrania roundStatus.");
+    return null;
+  }
+
+  const db = getDatabase();
+  const roundStatusRef = dbRef(
+    db,
+    `rooms/${roomId.value}/games/${currentGame.value}/rounds/${currentRound.value}/status`
+  );
+
+  try {
+    const snapshot = await get(roundStatusRef);
+    if (snapshot.exists()) {
+      return snapshot.val();
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error("[App] Błąd pobierania roundStatus:", error);
+    return null;
+  }
+};
+
 const handleStartGame = () => {
   showStartGameModal.value = true;
 };
 
-// Funkcja potwierdzająca wybór trybu i rozpoczynająca grę
 const confirmStartGame = async () => {
   loadingStore.startLoading();
 
@@ -121,7 +205,6 @@ const confirmStartGame = async () => {
   try {
     const roomId = await createGame(gameMode.value);
     sessionStore.setRoomId(roomId);
-    // Opcjonalnie: sessionStore.setGameMode(gameMode.value);
     router.push(`/lobby/${roomId}`);
     showStartGameModal.value = false;
   } catch (error) {
@@ -156,7 +239,6 @@ const handleJoinGame = async () => {
 </script>
 
 <style scoped>
-/* Podstawowe style */
 h1 {
   color: white;
 }
@@ -296,7 +378,6 @@ input {
   box-sizing: border-box;
 }
 
-/* ---- Style Toggle dla trybu gry ---- */
 .toggle-container {
   display: flex;
   justify-content: center;
@@ -316,7 +397,6 @@ input {
   accent-color: #ff9900;
 }
 
-/* ---- Responsive Adjustments ---- */
 @media (max-width: 768px) {
   .buttons-container {
     flex-direction: column;

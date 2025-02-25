@@ -5,7 +5,6 @@
   <div v-else class="container">
     <Scoreboard :lastGame="isLastGame" />
 
-    <!-- Jeśli to ostatnia gra, pokaż przyciski do zmiany gry -->
     <div v-if="isLastGame" class="last-game-nav">
       <p>To była ostatnia gra. Możesz przejrzeć wyniki wszystkich gier</p>
       <div class="game-buttons">
@@ -22,20 +21,16 @@
       </div>
     </div>
 
-    <!-- Podsumowanie gry -->
     <GameSummary v-if="displayedGameId" :gameData="displayedGameData" />
 
     <div class="tet">
       <PlayersReadyStatus v-if="!isRoomFinished && !isLastGame" />
     </div>
-    <!-- Komponent pokazujący status gotowości graczy -->
 
-    <!-- Jeśli gracz NIE JEST DJ-em i NIE JEST gotowy -->
     <div v-if="!isRoomFinished && !playerReady" class="player-ready-control">
       <button @click="handleSetReady" class="btn-ready">Jestem gotowy</button>
     </div>
 
-    <!-- Jeśli DJ i wszyscy gracze są gotowi, pokazujemy przycisk -->
     <div
       v-if="isDj && allPlayersReady && !isRoomFinished && !isLastGame"
       class="dj-controls"
@@ -45,7 +40,6 @@
       </button>
     </div>
 
-    <!-- Kontrolki dla zakończonej rozgrywki -->
     <div v-if="isRoomFinished" class="finished-controls">
       <p>Rozgrywka się zakończyła!</p>
       <button @click="goHome" class="btn-start">
@@ -65,7 +59,6 @@ import { useSessionStore } from "@/stores/session";
 import { usePlayerReady } from "@/composables/usePlayerReady";
 import { useSuccessStore } from "@/stores/useSuccessStore";
 const successStore = useSuccessStore();
-// Uzyskujemy logikę Summary z composable
 const {
   roomId,
   isDj,
@@ -81,11 +74,9 @@ const {
   goHome,
 } = useSummaryLogic();
 
-// Uzyskujemy logikę gotowości graczy
 const { setCurrentPlayerReady, players, resetReadyStatus } = usePlayerReady();
 
 const sessionStore = useSessionStore();
-// ✅ **Sprawdza, czy wszyscy gracze (łącznie z DJ-em) mają ustawione ready === true**
 const allPlayersReady = computed(() => {
   const p = players.value;
   const keys = Object.keys(p);
@@ -99,28 +90,24 @@ const allPlayersReady = computed(() => {
 
   return keys.every((id) => p[id]?.ready === true);
 });
-// Sprawdzamy, czy gracz jest gotowy
+
 const playerReady = computed(
   () => players.value[sessionStore.playerId!!]?.ready ?? false
 );
 
-// Funkcja oznaczająca gracza jako gotowego
 const handleSetReady = async () => {
   await setCurrentPlayerReady();
 };
 
-// Funkcja obsługująca rozpoczęcie kolejnej gry przez DJ-a (resetuje gotowość graczy)
 const startNextGameHandler = async () => {
   await setSongSelection();
   await resetReadyStatus();
 };
 
-// Inicjalizacja przy montowaniu widoku
 onMounted(() => {
   initSummary();
 });
 
-// Nasłuch zmian statusu gry w store
 watch(
   () => sessionStore.gameStatus,
   (newStatus) => {
@@ -161,24 +148,20 @@ watch(
   border-radius: 4px;
 }
 
-/* Stan hover – jaśniejszy gradient oraz mniejsze cienie */
 .btn-game:hover {
   background: linear-gradient(145deg, #ffdd33, #ffbb00);
   box-shadow: 0 0.25rem 0 #cc5200, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
 }
 
-/* Stan aktywny – efekt wciśnięcia */
 .btn-game:active {
   transform: scale(0.98);
   box-shadow: 0 0.25rem 0 #cc5200, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
 }
 
-/* Jeśli przycisk nie ma klasy .active, wyglądamy go nieco wyszarzonym */
 .btn-game:not(.active) {
   opacity: 0.7;
 }
 
-/* Aktywny przycisk – wyróżniony pełną przezroczystością (możesz dodatkowo zmodyfikować np. border lub cienie) */
 .btn-game.active {
   opacity: 1;
   background: linear-gradient(145deg, #ffcc00, #ff9900);

@@ -4,6 +4,23 @@ import he from "he";
 
 const YOUTUBE_API_BASE_URL = "https://www.googleapis.com/youtube/v3";
 
+const cleanTitle = (title: string, channelTitle: string): string => {
+  let decodedTitle = he.decode(title);
+
+  decodedTitle = decodedTitle.replace(
+    /(\(|\[)?\s*(Official\s*(Music)?\s*Video|Lyrics\s*Video|HD|4K|Audio|Remastered|Visualizer|Full Album)\s*(Version)?(\)|\])?/gi,
+    ""
+  );
+
+  const channelNamePattern = new RegExp(
+    `\\s*${channelTitle.replace(/\s+/g, "").toLowerCase()}\\s*$`,
+    "i"
+  );
+  decodedTitle = decodedTitle.replace(channelNamePattern, "");
+
+  return decodedTitle.replace(/\s{2,}/g, " ").trim();
+};
+
 export const fetchYouTubeVideos = async (
   query: string,
   apiKey: string,
@@ -20,18 +37,15 @@ export const fetchYouTubeVideos = async (
       },
     });
 
-    // Zakładamy, że axios zwraca obiekt z polami, m.in. data.items
     const videos: YouTubeVideo[] = response.data.items;
-
-    // Odczytany tytuł często jest w formie z encjami HTML => dekodujemy
-    // (Można to zrobić tutaj, jeśli chcesz mieć czysty wynik w całej aplikacji)
     for (const video of videos) {
-      video.snippet.title = he.decode(video.snippet.title);
-      // ewentualnie: video.snippet.description = he.decode(video.snippet.description);
-      // if you want decode channelTitle too:
-      // video.snippet.channelTitle = he.decode(video.snippet.channelTitle);
+      console.log("Title:", video.snippet.title);
+      console.log("Channel:", video.snippet.channelTitle);
+      video.snippet.title = cleanTitle(
+        video.snippet.title,
+        video.snippet.channelTitle
+      );
     }
-
     return videos;
   } catch (error) {
     console.error("Error fetching YouTube videos:", error);

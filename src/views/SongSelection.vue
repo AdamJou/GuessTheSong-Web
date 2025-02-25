@@ -2,35 +2,7 @@
   <div class="song-selection">
     <section>
       <h1>Wybieranie utworu</h1>
-
       <SongSearch />
-
-      <!-- FORMULARZ WYBORU PIOSENKI
-    <form @submit.prevent="submitSong" v-if="!hasSubmitted">
-      <div>
-        <label for="songId">Song ID:</label>
-        <input
-          v-model="songId"
-          type="text"
-          id="songId"
-          placeholder="Enter Song ID"
-          required
-        />
-      </div>
-      <div>
-        <label for="songTitle">Song Title:</label>
-        <input
-          v-model="songTitle"
-          type="text"
-          id="songTitle"
-          placeholder="Enter Song Title"
-          required
-        />
-      </div>
-      <button type="submit" :disabled="!canSubmit">Submit</button>
-    </form>
-     -->
-      <!-- OBSZAR INFORMUJĄCY, ŻE WSZYSCY GRACZE ZŁOŻYLI PIOSENKI -->
       <Transition name="fade" appear>
         <div v-if="allPlayersSubmitted && isDj">
           <p style="color: white; margin-top: 1rem">
@@ -42,7 +14,6 @@
         </div>
       </Transition>
 
-      <!-- STATUSY GRACZY ICH GOTOWOŚCI (Submitted / Not Submitted) -->
       <div class="players-grid">
         <ul
           v-if="players && Object.keys(players).length > 0"
@@ -84,35 +55,28 @@ import { updatePlayerSong } from "@/services/songService";
 import Status from "./Status.vue";
 import DjPanel from "@/views/DjPanel.vue";
 import SongSearch from "@/components/SongSearch.vue";
-// Inicjalizacja routera i store'ów
 const router = useRouter();
 const sessionStore = useSessionStore();
 
-// Dane z sessionStore
 const roomId = sessionStore.roomId as string;
 const playerId = sessionStore.playerId as string;
 const currentGame = computed(() => sessionStore.currentGame);
 const players = computed(() => sessionStore.players);
 const isDj = computed(() => sessionStore.djId === playerId);
 const gameStatus = computed(() => sessionStore.gameStatus);
-console.log("isDj", isDj.value);
 
-// Lokalne dane formularza
 const songId = ref("");
 const songTitle = ref("");
 const playerSongs = ref<Record<string, string>>({});
 
-// Obliczenia bazujące na `playerSongs`
 const hasSubmitted = computed(() => !!playerSongs.value[playerId]);
 const allPlayersSubmitted = computed(() => {
   const totalPlayers = Object.keys(players.value || {});
   return totalPlayers.every((id) => !!playerSongs.value[id]);
 });
 
-// Walidacja formularza
 const canSubmit = computed(() => songId.value.trim() && songTitle.value);
 
-// Funkcja przesyłania piosenki
 const submitSong = async () => {
   if (canSubmit.value) {
     await updatePlayerSong(
@@ -125,7 +89,6 @@ const submitSong = async () => {
   }
 };
 
-// Subskrypcja do zmian w playerSongs
 let unsubscribe: (() => void) | null = null;
 
 const subscribeToPlayerSongs = () => {
@@ -145,7 +108,6 @@ const unsubscribeFromPlayerSongs = () => {
   }
 };
 
-// Subskrypcje na `currentGame`
 watch(
   currentGame,
   (newGame) => {
@@ -171,7 +133,6 @@ const handleStartGame = async () => {
   }
 };
 
-// Funkcja reagująca na zmianę statusu gry
 const handleGameStatusChange = (status: string | null) => {
   if (!status) return;
 
@@ -184,15 +145,12 @@ const handleGameStatusChange = (status: string | null) => {
           component: DjPanel,
         });
       }
-
-      router.push(`/dj-panel/${roomId}`); // Przekierowanie użytkownika po dodaniu trasy
-      // router.push({ name: "DjPanel", params: { roomId } });
+      router.push(`/dj-panel/${roomId}`);
     } else {
       router.push({ name: "Voting", params: { roomId } });
     }
   }
 };
-// Obserwacja `gameStatus` i reagowanie na jego zmiany
 watch(gameStatus, (newStatus) => {
   handleGameStatusChange(newStatus);
 });
@@ -278,22 +236,20 @@ ul {
   align-items: center;
 }
 
-/* Player info styles */
 .player-name {
   font-weight: bold;
   font-size: 1rem;
 }
 
 .player-status {
-  font-size: 1.25rem; /* icon size */
+  font-size: 1.25rem;
 }
 
-/* Icons for submitted / not submitted */
 .submitted-icon {
-  color: #00ff99; /* green-ish */
+  color: #00ff99;
 }
 
 .not-submitted-icon {
-  color: #ff5555; /* red-ish */
+  color: #ff5555;
 }
 </style>

@@ -4,17 +4,13 @@
 
     <transition-group name="fade" tag="ul" class="votes-list">
       <li v-for="(player, id) in filteredPlayers" :key="id" class="player-vote">
-        <!-- Lewa kolumna: gracz głosujący -->
         <div class="player-name">
           {{ player.name }}
         </div>
 
-        <!-- Środkowa kolumna: "zagłosował na" (tylko jeśli oddano głos) -->
         <div class="vote-label" v-if="votes[id]">→</div>
-        <!-- Jeśli nie ma głosu, zostawiamy środkową kolumnę pustą, by zachować układ -->
         <div class="vote-label" v-else></div>
 
-        <!-- Prawa kolumna: osoba, na którą oddano głos LUB X -->
         <div class="voted-player" v-if="votes[id]">
           {{ getPlayerName(votes[id]) }}
         </div>
@@ -37,10 +33,8 @@ import { useSessionStore } from "@/stores/session";
 const { votes, getPlayerName } = useVotes();
 const sessionStore = useSessionStore();
 
-// Id DJ-a, którego pomijamy na liście
 const djId = computed(() => sessionStore.djId);
 
-// Lista graczy bez DJ-a
 const filteredPlayers = computed(() => {
   return Object.entries(sessionStore.players || {}).reduce(
     (result, [id, player]) => {
@@ -78,20 +72,18 @@ h2 {
 .player-vote {
   display: flex;
   align-items: center;
-  justify-content: space-between; /* rozkład na całą szerokość */
+  justify-content: space-between;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   padding: 1rem;
   font-size: 1.2rem;
 }
 
-/* Lewa kolumna */
 .player-name {
   flex: 1;
   text-align: left;
   color: #00ff99;
 }
 
-/* Środkowa kolumna */
 .vote-label {
   flex: 1;
   text-align: center;
@@ -101,21 +93,18 @@ h2 {
   color: #ddd;
 }
 
-/* Prawa kolumna - gdy gracz oddał głos */
 .voted-player {
   flex: 1;
   text-align: right;
   color: #ffcc00;
 }
 
-/* Prawa kolumna - gdy gracz NIE oddał głosu (X) */
 .not-voted-icon {
   text-align: right;
   color: #ff5555;
   font-size: 1.4rem;
 }
 
-/* Animacja pojawiania się głosów */
 .fade-enter-active,
 .fade-leave-active,
 .fade-move {

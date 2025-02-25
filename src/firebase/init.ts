@@ -8,15 +8,14 @@ import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyATegquNqoUt700y_dGZwTMOSiA9iOhRHI",
-  authDomain: "guessthesongweb.firebaseapp.com",
-  databaseURL:
-    "https://guessthesongweb-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "guessthesongweb",
-  storageBucket: "guessthesongweb.firebasestorage.app",
-  messagingSenderId: "484312113292",
-  appId: "1:484312113292:web:118fa7f78ef981bdb8dba9",
-  measurementId: "G-CZW4ZNTFWQ",
+  apiKey: import.meta.env.VITE_FIREBASE_CONFIG_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_CONFIG_AUTH_DOMAIN,
+  databaseURL: import.meta.env.VITE_FIREBASE_CONFIG_DATABASE_URL,
+  projectId: import.meta.env.VITE_FIREBASE_CONFIG_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_CONFIG_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_CONFIG_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_CONFIG_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_CONFIG_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
@@ -26,7 +25,7 @@ export const database = getDatabase(app);
 
 // Opcjonalne: Inicjalizacja App Check
 const appCheck = initializeAppCheck(app, {
-  provider: new ReCaptchaV3Provider("6LcOsKQqAAAAACYIUirz6DX0uuK-H6POZrkuUHQ2"),
+  provider: new ReCaptchaV3Provider(import.meta.env.VITE_APP_CHECK_SITE_KEY),
   isTokenAutoRefreshEnabled: false, // Tymczasowo wyłącz automatyczne odświeżanie
 });
 

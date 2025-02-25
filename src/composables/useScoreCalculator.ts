@@ -1,5 +1,3 @@
-// useScoreCalculator.ts
-
 import { ref } from "vue";
 import { getDatabase, ref as dbRef, update, get } from "firebase/database";
 import { Room, Game, Player } from "@/types/types";
@@ -8,7 +6,6 @@ export function useScoreCalculator() {
   const scores = ref<Record<string, number>>({});
   const loading = ref(false);
 
-  // Nowa zmienna do przechowywania gracza z najwyższym wynikiem.
   const highestScorer = ref<Player | null>(null);
 
   const calculateAndSaveScores = async (roomId: string, gameId: string) => {
@@ -41,7 +38,6 @@ export function useScoreCalculator() {
 
       const players = roomData.players;
 
-      // Przygotowujemy "lokalną" kopię graczy z aktualnymi wynikami
       const updatedPlayers: Record<string, Player> = {};
       for (const playerId in players) {
         updatedPlayers[playerId] = {
@@ -50,7 +46,6 @@ export function useScoreCalculator() {
         };
       }
 
-      // Przeliczamy punkty na podstawie "rounds"
       const rounds = game.rounds || {};
 
       for (const roundKey in rounds) {
@@ -62,7 +57,6 @@ export function useScoreCalculator() {
         const suggestedBy = round.song.suggestedBy;
         const votes = round.votes || {};
 
-        // 1) Każdy głosujący, który wskazał `suggestedBy`, dostaje punkt
         for (const voterId in votes) {
           if (votes[voterId] === suggestedBy) {
             if (updatedPlayers[voterId]) {
@@ -71,7 +65,6 @@ export function useScoreCalculator() {
           }
         }
 
-        // 2) Jeśli nikt nie wytypował autora, autor dostaje punkt
         const guessedBySomeone = Object.values(votes).some(
           (guessedId) => guessedId === suggestedBy
         );
@@ -82,20 +75,16 @@ export function useScoreCalculator() {
         }
       }
 
-      // Zapisujemy zaktualizowane wartości do bazy
       const playersRef = dbRef(db, `rooms/${roomId}/players`);
       await update(playersRef, updatedPlayers);
 
-      // Aktualizujemy w `scores`, by UI mógł je odczytać
       for (const playerId in updatedPlayers) {
         scores.value[playerId] = updatedPlayers[playerId].score;
       }
 
-      // Wyznaczamy gracza o najwyższym score
       const playersArray = Object.values(updatedPlayers);
       playersArray.sort((a, b) => b.score - a.score);
 
-      // Pierwszy w posortowanej tablicy ma największy wynik
       highestScorer.value = playersArray.length > 0 ? playersArray[0] : null;
 
       console.log("Scores successfully updated in the database");
@@ -110,6 +99,6 @@ export function useScoreCalculator() {
     calculateAndSaveScores,
     scores,
     loading,
-    highestScorer, // Udostępniamy zmienną na zewnątrz
+    highestScorer,
   };
 }

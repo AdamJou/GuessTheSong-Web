@@ -50,9 +50,7 @@ import { useLoadingStore } from "@/stores/useLoadingStore";
 import Status from "@/views/Status.vue";
 import { useCloseRoom } from "@/composables/useCloseRoom";
 import { useRoomWatcher } from "@/composables/useCloseRoomWatcher";
-// Wyciągamy logikę "zamknij pokój"
 
-// Router i session store
 const router = useRouter();
 const sessionStore = useSessionStore();
 const successStore = useSuccessStore();
@@ -62,17 +60,15 @@ const loadingStore = useLoadingStore();
 const { closeRoom } = useCloseRoom();
 const { watchRoomRemoved, unwatchRoomRemoved } = useRoomWatcher();
 
-// Komputowane właściwości z session store
 const roomId = computed(() => sessionStore.roomId);
 const players = computed(() => sessionStore.players);
 const djId = computed(() => sessionStore.djId);
-const gameStatus = computed(() => sessionStore.gameStatus); // Obserwacja statusu gry
+const gameStatus = computed(() => sessionStore.gameStatus);
 const isDj = computed(() => sessionStore.playerId === djId.value);
 const canStartGame = computed(
   () => Object.keys(players.value || {}).length > 1
 );
 
-// Fix lobby animation
 const isVisible = ref(false);
 const lobbyStyle = computed(() => {
   return {
@@ -91,31 +87,28 @@ const copyToClipboard = async () => {
   }
 };
 
-// Funkcja dołączania gracza do pokoju
 const ensurePlayerInRoom = async () => {
   try {
     const { joinGame } = await import("@/services/gameService");
     if (roomId.value) {
-      await joinGame(roomId.value); // Dodaj gracza do pokoju
+      await joinGame(roomId.value);
     } else {
       throw new Error("Room ID is missing.");
     }
   } catch (error: any) {
     console.error(error);
     alert(error.message || "An error occurred.");
-    router.push("/home"); // Jeśli nie można dołączyć, wróć do HomeView
+    router.push("/home");
   }
 };
 
-// Obsługa rozpoczęcia gry przez DJ-a
 const handleStartGame = async () => {
   loadingStore.startLoading();
   await new Promise((r) => setTimeout(r, 2000));
 
   try {
     if (roomId.value) {
-      await createGameAndRound(roomId.value); // Tworzenie gry i pierwszej rundy
-      console.log("Game started and players are redirected to SongSelection");
+      await createGameAndRound(roomId.value);
     } else {
       throw new Error("Room ID is missing.");
     }
@@ -135,19 +128,17 @@ const deleteGame = () => {
   }
 };
 
-// Główna logika w onMounted
 onMounted(async () => {
   setTimeout(() => {
     isVisible.value = true;
   }, 1000);
-  await ensurePlayerInRoom(); // Upewnij się, że gracz jest w pokoju
+  await ensurePlayerInRoom();
   watchRoomRemoved();
 });
 
 onUnmounted(() => {
   unwatchRoomRemoved();
 });
-// Funkcja reagująca na zmianę statusu gry
 const handleGameStatusChange = (status: string | null) => {
   if (!status) return;
 
@@ -155,7 +146,6 @@ const handleGameStatusChange = (status: string | null) => {
     router.push({ name: "SongSelection", params: { roomId: roomId.value } });
   }
 };
-// Obserwacja `gameStatus` i reagowanie na jego zmiany
 watch(gameStatus, (newStatus) => {
   handleGameStatusChange(newStatus);
 });

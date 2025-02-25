@@ -1,10 +1,8 @@
 <template>
   <div class="scoreboard-container">
     <h2>Tablica punktów</h2>
-    <!-- Jeśli brak graczy, wyświetlamy informację -->
     <p v-if="sortedPlayers.length === 0">Brak graczy do wyświetlenia.</p>
 
-    <!-- Kontener dla tabeli – umożliwia przewijanie poziome na wąskich ekranach -->
     <div class="table-wrapper" v-else>
       <table class="scoreboard-table">
         <thead>
@@ -14,11 +12,9 @@
           </tr>
         </thead>
         <tbody>
-          <!-- Wyświetlamy posortowanych graczy wraz z indeksem -->
           <tr v-for="(player, index) in sortedPlayers" :key="player.name">
             <td>
               {{ player.name }}
-              <!-- Wyświetlamy ikonę korony tylko przy najwyższym wyniku w ostatniej grze -->
               <span v-if="lastGame && index === 0" class="crown-icon">👑</span>
             </td>
             <td>{{ player.score }}</td>
@@ -39,7 +35,6 @@ const props = defineProps<{
 
 const sessionStore = useSessionStore();
 
-// Sortujemy graczy malejąco wg score
 const sortedPlayers = computed(() => {
   const playersObj = sessionStore.players || {};
   const playersArray = Object.values(playersObj);
@@ -56,7 +51,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Kontener główny: wyśrodkowanie, ograniczenie szerokości, itd. */
 .scoreboard-container {
   max-width: 500px;
   margin: 0 auto;
@@ -66,19 +60,16 @@ onMounted(() => {
   color: #fff;
 }
 
-/* Nagłówek */
 .scoreboard-container h2 {
   font-size: clamp(1.2rem, 5vw, 1.8rem);
   margin-bottom: 1rem;
   color: #ffcc00;
 }
 
-/* Informacja o braku graczy */
 .scoreboard-container p {
   color: #ccc;
 }
 
-/* Kontener tabeli z przewijaniem poziomym na wąskich ekranach */
 .table-wrapper {
   overflow-x: auto;
   margin-bottom: 1rem;
@@ -86,14 +77,12 @@ onMounted(() => {
   border-radius: 8px;
 }
 
-/* Tabela */
 .scoreboard-table {
   width: 100%;
   border-collapse: collapse;
   min-width: 300px;
 }
 
-/* Nagłówki tabeli */
 .scoreboard-table th {
   background-color: #222;
   color: #00ff99;
@@ -104,7 +93,6 @@ onMounted(() => {
   font-size: 1rem;
 }
 
-/* Komórki tabeli */
 .scoreboard-table td {
   padding: 12px;
   border-bottom: 1px solid #333;
@@ -112,7 +100,6 @@ onMounted(() => {
   text-align: center;
 }
 
-/* Kolorowanie naprzemienne wierszy */
 .scoreboard-table tbody tr:nth-child(odd) {
   background-color: #2a2b36;
 }
@@ -120,18 +107,15 @@ onMounted(() => {
   background-color: #1e1f29;
 }
 
-/* Efekt hover dla wierszy */
 .scoreboard-table tbody tr:hover {
   background-color: #343646;
 }
 
-/* Stylizacja ikony korony */
 .crown-icon {
   margin-left: 0.5rem;
-  font-size: 1.2rem; /* Możesz dostosować rozmiar */
+  font-size: 1.2rem;
 }
 
-/* Responsywność – modyfikacja czcionek i paddingu dla małych ekranów */
 @media (max-width: 400px) {
   .scoreboard-container h2 {
     font-size: 1.5rem;

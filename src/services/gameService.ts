@@ -22,9 +22,8 @@ export const createGame = async (
     throw new Error("Player ID or nickname is missing.");
   }
 
-  const roomId = generateRoomCode(); // 6-cyfrowy kod
+  const roomId = generateRoomCode();
 
-  // Aktualizacja currentGame
   await updateCurrentGame(sessionStore.playerId, roomId);
 
   const newPlayer: Player = {
@@ -52,8 +51,8 @@ export const createGame = async (
   await set(roomRef, newRoom);
 
   sessionStore.setRoomId(roomId);
-  sessionStore.subscribeToRoomStatus(); // Startuje nasłuchiwanie statusu pokoju
-  sessionStore.subscribeToCurrentGame(); // Startuje nasłuchiwanie gry i rundy
+  sessionStore.subscribeToRoomStatus();
+  sessionStore.subscribeToCurrentGame();
 
   return roomId;
 };
@@ -65,19 +64,24 @@ export const joinGame = async (roomId: string): Promise<void> => {
     throw new Error("Player ID or nickname is missing.");
   }
 
-  // Aktualizacja currentGame
   await updateCurrentGame(sessionStore.playerId, roomId);
 
   const roomRef = dbRef(database, `rooms/${roomId}`);
   const snapshot = await get(roomRef);
 
   if (!snapshot.exists()) {
+    await updateCurrentGame(sessionStore.playerId, "");
     throw new Error("Room not found.");
   }
 
   const roomData: Room = snapshot.val();
+  console.log("Room status:", roomData.status);
 
-  // Sprawdzenie, czy gracz już istnieje w pokoju
+  if (roomData.status !== "waiting") {
+    await updateCurrentGame(sessionStore.playerId, "");
+    throw new Error("Game has started");
+  }
+
   if (!roomData.players[sessionStore.playerId]) {
     const newPlayer: Player = {
       id: sessionStore.playerId,
@@ -90,44 +94,40 @@ export const joinGame = async (roomId: string): Promise<void> => {
       dbRef(database, `rooms/${roomId}/players/${sessionStore.playerId}`),
       newPlayer
     );
-
     console.log(`Player ${sessionStore.nickname} added to room ${roomId}`);
+  } else {
+    console.log("Player already in the room");
   }
 
   sessionStore.setRoomId(roomId);
-  sessionStore.subscribeToRoomStatus(); // Startuje nasłuchiwanie statusu pokoju
-  sessionStore.subscribeToCurrentGame(); // Startuje nasłuchiwanie gry i rundy
+  sessionStore.subscribeToRoomStatus();
+  sessionStore.subscribeToCurrentGame();
 };
 
 export const createGameAndRound = async (roomId: string): Promise<void> => {
   const sessionStore = useSessionStore();
   const roomRef = dbRef(database, `rooms/${roomId}`);
 
-  // Fetch the room data
   const snapshot = await get(roomRef);
   if (!snapshot.exists()) {
     throw new Error("Room not found.");
   }
   const roomData: Room = snapshot.val();
 
-  // Create new game and round IDs
   const gameId = `game${Object.keys(roomData.games || {}).length + 1}`;
   const roundId = `round1`;
 
-  // Prepare player songs and votes
   const playerSongs: Record<string, string> = {};
   const votes: Record<string, string> = {};
 
   Object.keys(roomData.players).forEach((playerId) => {
-    playerSongs[playerId] = ""; // Placeholder for songs
+    playerSongs[playerId] = "";
 
-    // Exclude DJ from the initial votes
     if (playerId !== sessionStore.playerId) {
-      votes[playerId] = ""; // Initialize vote as an empty string
+      votes[playerId] = "";
     }
   });
 
-  // Define the new game and round objects
   const newGame: Game = {
     id: gameId,
     djId: sessionStore.playerId!,
@@ -138,12 +138,12 @@ export const createGameAndRound = async (roomId: string): Promise<void> => {
   const newRound: Round = {
     id: roundId,
     song: {
-      songId: "", // Placeholder
-      songTitle: "", // Placeholder
+      songId: "",
+      songTitle: "",
       suggestedBy: "",
       wasPlayed: false,
     },
-    votes: votes, // Pre-populated votes
+    votes: votes,
     status: "waiting",
   };
 
@@ -153,15 +153,14 @@ export const createGameAndRound = async (roomId: string): Promise<void> => {
   console.log("New Round:", newRound);
 
   await update(roomRef, {
-    [`games/${gameId}`]: newGame, // Update the game object without rounds
+    [`games/${gameId}`]: newGame,
     currentGame: gameId,
     currentRound: roundId,
     status: "song_selection",
   });
 
-  // Update the specific round separately
   await update(roomRef, {
-    [`games/${gameId}/rounds/${roundId}`]: newRound, // Update the round object
+    [`games/${gameId}/rounds/${roundId}`]: newRound,
   });
 
   sessionStore.subscribeToCurrentGame();
