@@ -1,21 +1,12 @@
 <template>
-  <!-- Tło -->
-  <!-- <Background />-->
-
-  <!-- Główny kontener wypełniający okno -->
-  <!-- Kontener wycentrowany w pionie i poziomie (flex), 
-         wewnątrz którego jest #root -->
   <div id="root">
-    <!-- Właściwa logika aplikacji -->
-
     <transition name="fade" mode="out-in">
-      <router-view v-if="initialized" />
+      <router-view v-if="initialized" :replace="true" />
     </transition>
     <div v-if="showReturnButton" class="return-container">
       <p>Twoja gra została wstrzymana.</p>
       <button @click="resumeGame">Powróć do gry w pokoju {{ roomId }}</button>
     </div>
-    <!-- Loader pełnoekranowy (fixed) -->
     <div v-if="loadingStore.isLoading" class="global-loader">
       <p>Trwa ładowanie...</p>
       <div class="nutka-spinner">
@@ -26,8 +17,6 @@
         </svg>
       </div>
     </div>
-
-    <!-- Komunikaty błędów/sukcesu -->
     <ErrorMessage />
     <SuccessMessage />
   </div>
@@ -48,8 +37,6 @@ import { useSessionStore } from "@/stores/session";
 import { useLoadingStore } from "@/stores/useLoadingStore";
 import { useRouter } from "vue-router";
 
-/* Komponenty */
-import Background from "@/components/Background.vue";
 import ErrorMessage from "@/components/ErrorMessage.vue";
 import SuccessMessage from "@/components/SuccessMessage.vue";
 
@@ -61,14 +48,12 @@ const initialized = ref(false);
 const showReturnButton = ref(false);
 const roomId = ref(sessionStorage.getItem("roomId") || "");
 
-// Tworzymy reaktywne referencje dla wartości ze store'a
 const currentGame = computed(() => sessionStore.currentGame);
 const currentRound = computed(() => sessionStore.currentRound);
 const gameStatus = computed(() => sessionStore.gameStatus);
 const playerId = computed(() => sessionStorage.getItem("playerId"));
 const djId = computed(() => sessionStore.djId);
 
-// Funkcja pobierająca aktualny roundStatus bez subskrypcji
 const fetchRoundStatus = async () => {
   if (!roomId.value || !currentGame.value || !currentRound.value) {
     console.warn("Brak danych do pobrania roundStatus.");
@@ -84,7 +69,6 @@ const fetchRoundStatus = async () => {
   try {
     const snapshot = await get(roundStatusRef);
     if (snapshot.exists()) {
-      console.log("[App] Pobrano roundStatus:", snapshot.val());
       return snapshot.val();
     } else {
       console.warn("[App] roundStatus nie istnieje w bazie.");
@@ -108,7 +92,6 @@ const fetchDjId = async (roomId: string): Promise<string | null> => {
   try {
     const snapshot = await get(djRef);
     if (snapshot.exists()) {
-      console.log("[fetchDjId] Pobrano djId:", snapshot.val());
       return snapshot.val();
     } else {
       console.warn("[fetchDjId] djId nie istnieje w bazie.");
@@ -124,7 +107,6 @@ onBeforeMount(async () => {
   await initializeApp();
 });
 
-// Funkcja do obsługi powrotu do gry
 const resumeGame = async () => {
   showReturnButton.value = false;
   if (sessionStore.gameStatus === "waiting") {
@@ -143,27 +125,20 @@ const resumeGame = async () => {
   }
 };
 
-// Funkcja inicjalizująca aplikację
 const initializeApp = async () => {
   const auth = getAuth();
   onAuthStateChanged(auth, async (user) => {
     if (user) {
-      console.log("[App] Zalogowany user:", user.uid);
       sessionStore.setPlayerId(user.uid);
     } else {
-      console.log("[App] Brak zalogowanego usera, logujemy anonimowo...");
       const result = await signInAnonymously(auth);
       sessionStore.setPlayerId(result.user.uid);
-      console.log("[App] Zalogowano anonimowo:", result.user.uid);
     }
     initialized.value = true;
   });
-
-  // Pobieranie danych gry po autoryzacji użytkownika
   await sessionStore.initializeSession();
 };
 
-// Przekierowanie użytkownika do strony głównej po odświeżeniu
 onMounted(async () => {
   if (roomId.value) {
     showReturnButton.value = true;
@@ -175,7 +150,6 @@ onMounted(async () => {
   window.addEventListener("beforeunload", handleBeforeUnload);
 });
 
-// Dodajemy watchery dla kluczowych pól, aby monitorować zmiany
 watch(
   [currentGame, currentRound, gameStatus],
   async ([newCurrentGame, newCurrentRound, newGameStatus]) => {
@@ -191,18 +165,15 @@ watch(
   { immediate: true }
 );
 
-// Obsługa zdarzenia zamknięcia strony
 const handleBeforeUnload = (event: BeforeUnloadEvent) => {
   event.preventDefault();
   event.returnValue = "";
 };
 
-// Usuwanie event listenera przy odmontowaniu
 onUnmounted(() => {
   window.removeEventListener("beforeunload", handleBeforeUnload);
 });
 
-// Funkcja przekierowania na podstawie aktualnego stanu gry
 const redirectToCurrentGameState = async (
   gameStatus: string,
   roundStatus: string | null
@@ -216,27 +187,19 @@ const redirectToCurrentGameState = async (
       router.push({ name: "SongSelection", params: { roomId: roomId.value } });
       break;
     case "voting":
-      console.log("playerId:", playerId.value, "djId:", djId.value);
       if (playerId.value !== djId.value) {
-        console.log("[Redirect] Gracz - voting");
         showReturnButton.value = false;
-
         router.push({ name: "Voting", params: { roomId: roomId.value } });
       } else {
-        console.log("[Redirect] DJ - voting");
-
         if (
           roundStatus === "waiting" ||
           roundStatus === "completed" ||
           roundStatus === "song_selection"
         ) {
-          console.log("[Redirect] DJ - DjPanel");
           showReturnButton.value = false;
           router.push({ name: "DjPanel", params: { roomId: roomId.value } });
         } else if (roundStatus === "voting") {
-          console.log("[Redirect] DJ - PlaySong");
           showReturnButton.value = false;
-
           router.push({ name: "PlaySong", params: { roomId: roomId.value } });
         } else {
           console.log("roundStatus", roundStatus);
@@ -257,7 +220,6 @@ const redirectToCurrentGameState = async (
 </script>
 
 <style>
-/* 1) Blokada przewijania w całym dokumencie */
 html,
 body {
   margin: 0;
@@ -265,32 +227,27 @@ body {
   box-sizing: border-box;
   width: 100%;
   height: 100%;
-  overflow: hidden; /* Dokument nieprzewijalny */
+  overflow: hidden;
   font-family: "Bungee", sans-serif;
   display: flex;
   justify-content: center;
   align-items: cetner;
   font-size: 14px;
   background-color: rgb(13, 13, 58);
-  /* Tworzymy efekt winiety */
   background-image: radial-gradient(
     ellipse at center,
-    /* eliptyczny gradient skoncentrowany w środku */ rgba(56, 38, 191, 0.059)
-      40%,
-    /* przezroczyste (jaśniejsze) centrum do 40% */ rgba(13, 13, 58, 0.95) 100%
-      /* ku krawędziom kolor przechodzi w niemal pełną intensywność */
+    rgba(56, 38, 191, 0.059) 40%,
+    rgba(13, 13, 58, 0.95) 100%
   );
 
-  /* Upewniamy się, że tło pokrywa cały obszar */
   background-size: cover;
   background-repeat: no-repeat;
 }
 
 #app {
-  /* Ustawienia kontenera */
   width: 100%;
-  max-width: 1200px; /* szerokość max. np. na duże monitory */
-  margin: 0 auto 0 auto; /* wycentrowanie + odstęp od góry */
+  max-width: 1200px;
+  margin: 0 auto 0 auto;
   text-align: center;
   color: #2c3e50;
   display: flex;
@@ -301,31 +258,29 @@ body {
   overflow-y: auto;
 }
 
-/* Dla przeglądarek WebKit (Chrome, Safari, Opera) */
 ::-webkit-scrollbar {
-  width: 8px; /* Szerokość pionowego scrollbara */
-  height: 8px; /* Wysokość poziomego scrollbara */
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent; /* Tło scrollbara, można ustawić inny kolor jeśli chcesz */
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #add8e6; /* Jasnoniebieski kolor */
-  border-radius: 999px; /* Ustawia maksymalne zaokrąglenie */
+  background-color: #add8e6;
+  border-radius: 999px;
   border: 2px solid transparent;
-  background-clip: content-box; /* Zapobiega nakładaniu się border na kolor thumb */
+  background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #9ac0d4; /* Opcjonalny efekt hover */
+  background-color: #9ac0d4;
 }
 
-/* Dla Firefoxa */
 * {
-  scrollbar-width: thin; /* Ustawia cienki wygląd scrollbara */
-  scrollbar-color: #add8e6 transparent; /* Kolor thumb oraz tła */
+  scrollbar-width: thin;
+  scrollbar-color: #add8e6 transparent;
   font-weight: normal;
 }
 
@@ -336,7 +291,7 @@ input {
   font-family: "Montserrat", sans-serif;
   border-radius: 5px;
 }
-/* Loader pełnoekranowy */
+
 .global-loader {
   position: fixed;
   inset: 0;
@@ -348,7 +303,6 @@ input {
   justify-content: center;
 }
 
-/* Animacje nutki */
 .nutka-spinner {
   width: 80px;
   height: 80px;
@@ -412,12 +366,10 @@ input {
     transform: scale(1);
   }
 }
-/* Ustawienie bazowego rozmiaru czcionki dla całego dokumentu */
 html {
-  font-size: 16px; /* 1rem = 16px */
+  font-size: 16px;
 }
 
-/* Stylowanie nagłówków z użyciem funkcji clamp() */
 h1 {
   font-size: clamp(1.5rem, 2vw + 1rem, 3rem);
   line-height: 1.2;
@@ -436,7 +388,6 @@ h3 {
   font-weight: normal;
 }
 
-/* Definicje klas CSS odpowiadające animacji */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 1s ease;
@@ -458,7 +409,7 @@ h3 {
 .slide-leave-to {
   transform: translateX(-100%);
 }
-/* ---- Animacje przejścia dla modal-content ---- */
+
 .cartoon-modal-enter-from,
 .cartoon-modal-leave-to {
   opacity: 0;
@@ -503,7 +454,6 @@ h3 {
   border: 1px solid #00aa66;
   box-shadow: 0 0.375rem 0 #009966, 0 0.625rem 1.25rem rgba(0, 0, 0, 0.3);
   text-shadow: 2px 2px 0 #009966;
-  /* Możesz dodać padding, font-size lub inne właściwości według potrzeb */
 }
 
 .btn-submit:hover {

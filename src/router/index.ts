@@ -12,59 +12,19 @@ import PlaySongView from "@/views/PlaySongView.vue";
 import SummaryView from "@/views/SummaryView.vue";
 
 const routes: Array<RouteRecordRaw> = [
-  {
-    path: "/",
-    name: "NicknameInput",
-    component: NicknameInput,
-    children: [],
-  },
-  {
-    path: "/home",
-    name: "HomeView",
-    component: HomeView,
-    children: [],
-  },
-  {
-    path: "/lobby/:roomId",
-    name: "Lobby",
-    component: Lobby,
-    children: [],
-  },
-  {
-    path: "/dj-panel/:roomId",
-    name: "DjPanel",
-    component: DjPanel,
-    children: [],
-  },
-  {
-    path: "/voting/:roomId",
-    name: "Voting",
-    component: VotingView,
-    children: [],
-  },
-  {
-    path: "/play/:roomId",
-    name: "PlaySong",
-    component: PlaySongView,
-    children: [],
-  },
+  { path: "/", name: "NicknameInput", component: NicknameInput },
+  { path: "/home", name: "HomeView", component: HomeView },
+  { path: "/lobby/:roomId", name: "Lobby", component: Lobby },
+  { path: "/dj-panel/:roomId", name: "DjPanel", component: DjPanel },
+  { path: "/voting/:roomId", name: "Voting", component: VotingView },
+  { path: "/play/:roomId", name: "PlaySong", component: PlaySongView },
   {
     path: "/song-selection/:roomId",
     name: "SongSelection",
     component: SongSelection,
-    children: [],
   },
-  {
-    path: "/summary/:roomId",
-    name: "Summary",
-    component: SummaryView,
-    children: [],
-  },
-  /* {
-    path: "/:catchAll(.*)",
-    redirect: "/",
-    children: [],
-  },*/
+  { path: "/summary/:roomId", name: "Summary", component: SummaryView },
+  { path: "/:catchAll(.*)", redirect: "/" }, // Domyślne przekierowanie
 ];
 
 const router = createRouter({
@@ -72,19 +32,32 @@ const router = createRouter({
   routes,
 });
 
-// Funkcja do sprawdzenia, czy URL powinien być ukryty
-const shouldHideUrl = (path: string) => {
-  return !path.startsWith("/lobby") && path !== "/" && path !== "/home";
+// 🔹 Blokowanie wstecz - pozostanie na bieżącej stronie
+const preventBack = () => {
+  history.pushState(null, "", location.href);
 };
 
-// Zmiana URL na "/play", jeśli nie jesteśmy na dozwolonych ścieżkach
-router.afterEach((to) => {
-  if (shouldHideUrl(to.path)) {
-    window.history.replaceState(null, "", "/play");
-  }
+window.addEventListener("popstate", (event) => {
+  event.preventDefault();
+  preventBack();
 });
 
-// Globalna kontrola dostępu
+// 🔹 Wywołanie przy każdej zmianie strony, by zablokować cofanie
+router.afterEach(() => {
+  preventBack();
+});
+
+// 🔹 Blokowanie gestów cofania na iPhone/Android
+document.body.addEventListener(
+  "touchstart",
+  function (event) {
+    if (event.touches.length > 1) {
+      event.preventDefault();
+    }
+  },
+  { passive: false }
+);
+
 router.beforeEach(navigationGuard);
 
 export default router;

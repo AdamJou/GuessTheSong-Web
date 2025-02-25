@@ -1,10 +1,8 @@
 <template>
   <div class="voting-view">
     <h1>RUNDA {{ currentRound?.replace(/\D/g, "") }}</h1>
-    <!-- Wyświetlamy komunikat, gdy utwór nie został jeszcze wybrany -->
     <p v-if="!currentSong?.songId" class="blink">DJ wybiera utwór...</p>
 
-    <!-- Wyświetlamy informacje o utworze, gdy już jest dostępny -->
     <div v-if="currentSong" class="song-container">
       <transition name="fade">
         <div v-if="currentSong?.songId">
@@ -13,15 +11,12 @@
           </p>
         </div>
       </transition>
-      <!-- YouTubePlayer pojawi się nad sekcją głosowania, 
-         warunkowo – tylko gdy mamy utwór oraz tryb gry "together" -->
       <YouTubePlayer
         v-if="currentSong?.songId && gameMode === 'separate'"
         :songId="currentSong.songId"
       />
     </div>
 
-    <!-- Sekcja głosowania -->
     <div v-if="currentSong && currentSong.songId && !hasVoted">
       <h3>Zagłosuj na gracza</h3>
       <ul>
@@ -44,14 +39,12 @@
       </button>
     </div>
 
-    <!-- Po głosowaniu -->
     <div v-if="hasVoted">
       <p>
         Zagłosowałeś na <strong class="voted-on">{{ votedPlayer }}</strong>
       </p>
     </div>
 
-    <!-- Wyświetlamy status głosowania w czasie rzeczywistym -->
     <VotingStatus v-if="hasVoted" />
   </div>
 </template>
@@ -65,11 +58,9 @@ import { useSessionStore } from "@/stores/session";
 import { useRouter } from "vue-router";
 import { useVotes } from "@/composables/useVotes";
 
-// Router i Store
 const router = useRouter();
 const sessionStore = useSessionStore();
 
-// Reactive dane z store
 const roomId = computed(() => sessionStore.roomId);
 const currentGame = computed(() => sessionStore.currentGame);
 const currentRound = computed(() => sessionStore.currentRound);
@@ -77,19 +68,14 @@ const players = computed(() => sessionStore.players);
 const playerId = computed(() => sessionStore.playerId);
 const isDJ = computed(() => sessionStore.djId === playerId.value);
 
-// Dane dotyczące utworu
 const currentSong = ref<{ songId: string; songTitle: string } | null>(null);
 
-// Wybór gracza do głosowania
 const selectedPlayer = ref<string | null>(null);
 
-// Status pokoju (np. zmiana do podsumowania lub zakończenia rundy)
 const roomStatus = ref<string | null>(null);
 
-// Subskrypcja głosów (używamy gotowego composable)
 const { votes, hasVoted, votedPlayer, getPlayerName, resetVotes } = useVotes();
 
-// Inni gracze (bez bieżącego gracza)
 const otherPlayers = computed(() =>
   Object.keys(players.value || {}).reduce((filtered, id) => {
     if (id !== playerId.value) {
@@ -99,14 +85,12 @@ const otherPlayers = computed(() =>
   }, {} as Record<string, { name: string }>)
 );
 
-// Firebase – subskrypcje dla statusu pokoju, utworu oraz trybu gry
 const db = getDatabase();
 
 let songUnsubscribe: (() => void) | null = null;
 let roomStatusUnsubscribe: (() => void) | null = null;
 let gameModeUnsubscribe: (() => void) | null = null;
 
-// Subskrypcja statusu pokoju
 const subscribeToRoomStatus = () => {
   if (!roomId.value) return;
   const roomStatusRef = dbRef(db, `rooms/${roomId.value}/status`);
@@ -118,7 +102,6 @@ const subscribeToRoomStatus = () => {
   });
 };
 
-// Subskrypcja aktualnego utworu
 const subscribeToSong = () => {
   if (!roomId.value || !currentGame.value || !currentRound.value) return;
   const songRef = dbRef(
@@ -131,7 +114,6 @@ const subscribeToSong = () => {
   });
 };
 
-// Subskrypcja trybu gry
 const subscribeToGameMode = () => {
   if (!roomId.value) return;
   const gameModeRef = dbRef(db, `rooms/${roomId.value}/gameMode`);
@@ -140,32 +122,27 @@ const subscribeToGameMode = () => {
   });
 };
 
-// Reactive zmienna dla trybu gry (np. "together" lub "separate")
 const gameMode = ref<string | null>(null);
 
-// Inicjalizujemy subskrypcje
 subscribeToRoomStatus();
 subscribeToSong();
 subscribeToGameMode();
 
-// Resetujemy stan przy zmianie rundy
 watch(
   currentRound,
   () => {
     if (songUnsubscribe) songUnsubscribe();
     subscribeToSong();
-    resetVotes(); // Reset głosowania przy zmianie rundy
+    resetVotes();
     selectedPlayer.value = null;
   },
   { immediate: true }
 );
 
-// Funkcja wyboru gracza
 const selectPlayer = (id: string) => {
   selectedPlayer.value = id;
 };
 
-// Funkcja wysyłania głosu
 const submitVote = async () => {
   if (
     !roomId.value ||
@@ -187,7 +164,6 @@ const submitVote = async () => {
   });
 };
 
-// Czyszczenie subskrypcji przy odmontowaniu komponentu
 onBeforeUnmount(() => {
   if (songUnsubscribe) {
     songUnsubscribe();
@@ -303,7 +279,6 @@ strong {
   font-size: larger;
 }
 
-/* Przykładowe style przycisku do głosowania */
 .btn-submit {
   color: #fff;
   background: linear-gradient(145deg, #ffcc00, #ff9900);

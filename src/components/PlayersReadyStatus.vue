@@ -36,7 +36,7 @@ onBeforeUnmount(() => {
 
 .chips-container {
   display: flex;
-  flex-wrap: wrap; /* Umożliwia zawijanie chipów do kolejnych wierszy */
+  flex-wrap: wrap;
   gap: 0.5rem;
   width: 100%;
   box-sizing: border-box;
@@ -61,12 +61,10 @@ onBeforeUnmount(() => {
   margin-right: 0.5rem;
 }
 
-/* Zielona kropka – gracz gotowy */
 .dot.ready {
   background-color: #4caf50;
 }
 
-/* Czerwona kropka – gracz nie gotowy */
 .dot.not-ready {
   background-color: #f44336;
 }
@@ -76,7 +74,6 @@ onBeforeUnmount(() => {
   font-size: 0.9rem;
 }
 
-/* Drobna responsywność – modyfikacja paddingu i rozmiaru czcionki przy małych ekranach */
 @media (max-width: 600px) {
   .chip {
     padding: 0.4rem 0.8rem;

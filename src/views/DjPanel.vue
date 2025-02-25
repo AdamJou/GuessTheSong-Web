@@ -44,7 +44,6 @@ import { PlayerSong, RoundSong } from "@/types/types";
 import { useLoadingStore } from "@/stores/useLoadingStore";
 import { useRouter } from "vue-router";
 const router = useRouter();
-// Session store for current session details
 const sessionStore = useSessionStore();
 const loadingStore = useLoadingStore();
 const roomId = sessionStorage.getItem("roomId") as string;
@@ -53,7 +52,6 @@ const players = computed(() => sessionStore.players);
 
 const currentRound = computed(() => sessionStore.currentRound);
 const allSongsPlayed = ref(false);
-// Reactive variable for storing player songs and selected song
 const playerSongs = ref<Record<string, PlayerSong>>({});
 
 function getPlayerNickname(pId: string): string {
@@ -68,7 +66,6 @@ const selectedSong = ref<{
   suggestedBy: string;
 } | null>(null);
 
-// Firebase subscription management
 let unsubscribe: (() => void) | null = null;
 
 const unplayedSongs = computed(() =>
@@ -119,18 +116,16 @@ onBeforeUnmount(() => {
   unsubscribeFromPlayerSongs();
 });
 
-// Selecting a song
 const selectSong = (playerId: string, song: PlayerSong) => {
   selectedPlayerId.value = playerId;
   selectedSong.value = {
     songId: song.songId,
     songTitle: song.songTitle,
-    suggestedBy: playerId, // Dodaj pole "suggestedBy"
+    suggestedBy: playerId,
   } as RoundSong;
   console.log("Selected Song:", selectedSong.value);
 };
 
-// Submitting the selected song to the current round
 const submitSelectedSong = async () => {
   if (
     !roomId ||
@@ -158,10 +153,9 @@ const submitSelectedSong = async () => {
 
     await update(roundRef, {
       song: selectedSong.value,
-      status: "voting", // Update the status to voting
+      status: "voting",
     });
 
-    // Optionally mark the song as played
     const playerSongRef = dbRef(
       db,
       `rooms/${roomId}/games/${currentGame.value}/playerSongs/${selectedPlayerId.value}`
@@ -182,16 +176,20 @@ const submitSelectedSong = async () => {
 <style scoped>
 .dj-panel {
   text-align: center;
-  margin-top: 50px;
   color: white;
   overflow-x: hidden;
-  min-height: 90vh;
+  height: 100%;
+}
+h2 {
+  font-size: 16px;
+  line-height: 1;
+  font-weight: normal;
 }
 
 ul {
   list-style-type: none;
   padding: 0 1rem;
-  max-height: 50vh;
+  max-height: 60vh;
   overflow: auto;
 }
 
@@ -237,5 +235,10 @@ button {
 i {
   font-size: 14px;
   color: #2c3e50;
+}
+@media (max-width: 768px) {
+  ul {
+    max-height: 70vh;
+  }
 }
 </style>
