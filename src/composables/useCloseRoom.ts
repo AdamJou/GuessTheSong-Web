@@ -29,7 +29,7 @@ export function useCloseRoom() {
       await update(dbRef(db), updates);
 
       sessionStore.clearRoomId();
-      router.push("/home");
+      router.replace("/home");
 
       console.log(`Pokój ${roomId.value} usunięty przez DJ-a.`);
     } catch (error) {

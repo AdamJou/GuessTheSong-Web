@@ -38,7 +38,7 @@ export function useRoomWatcher() {
 
           sessionStore.clearRoomId();
 
-          router.push("/home");
+          router.replace("/home");
         }
       },
       (error) => {

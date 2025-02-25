@@ -98,7 +98,7 @@ const ensurePlayerInRoom = async () => {
   } catch (error: any) {
     console.error(error);
     alert(error.message || "An error occurred.");
-    router.push("/home");
+    router.replace("/home");
   }
 };
 
@@ -143,7 +143,7 @@ const handleGameStatusChange = (status: string | null) => {
   if (!status) return;
 
   if (status === "song_selection") {
-    router.push({ name: "SongSelection", params: { roomId: roomId.value } });
+    router.replace({ name: "SongSelection", params: { roomId: roomId.value } });
   }
 };
 watch(gameStatus, (newStatus) => {

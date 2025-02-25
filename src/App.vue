@@ -120,7 +120,7 @@ const resumeGame = async () => {
       redirectToCurrentGameState(sessionStore.gameStatus, roundStatus);
     }
   } else {
-    router.push("/");
+    router.replace("/");
     sessionStore.clearRoomId();
   }
 };
@@ -142,7 +142,7 @@ const initializeApp = async () => {
 onMounted(async () => {
   if (roomId.value) {
     showReturnButton.value = true;
-    router.push("/home");
+    router.replace("/home");
   } else {
     await initializeApp();
   }
@@ -181,15 +181,18 @@ const redirectToCurrentGameState = async (
   if (!roomId.value) return;
   switch (gameStatus) {
     case "waiting":
-      router.push({ name: "Lobby", params: { roomId: roomId.value } });
+      router.replace({ name: "Lobby", params: { roomId: roomId.value } });
       break;
     case "song_selection":
-      router.push({ name: "SongSelection", params: { roomId: roomId.value } });
+      router.replace({
+        name: "SongSelection",
+        params: { roomId: roomId.value },
+      });
       break;
     case "voting":
       if (playerId.value !== djId.value) {
         showReturnButton.value = false;
-        router.push({ name: "Voting", params: { roomId: roomId.value } });
+        router.replace({ name: "Voting", params: { roomId: roomId.value } });
       } else {
         if (
           roundStatus === "waiting" ||
@@ -197,23 +200,26 @@ const redirectToCurrentGameState = async (
           roundStatus === "song_selection"
         ) {
           showReturnButton.value = false;
-          router.push({ name: "DjPanel", params: { roomId: roomId.value } });
+          router.replace({ name: "DjPanel", params: { roomId: roomId.value } });
         } else if (roundStatus === "voting") {
           showReturnButton.value = false;
-          router.push({ name: "PlaySong", params: { roomId: roomId.value } });
+          router.replace({
+            name: "PlaySong",
+            params: { roomId: roomId.value },
+          });
         } else {
           console.log("roundStatus", roundStatus);
         }
       }
       break;
     case "summary":
-      router.push({ name: "Summary", params: { roomId: roomId.value } });
+      router.replace({ name: "Summary", params: { roomId: roomId.value } });
       break;
     case "finished":
       sessionStore.clearRoomId();
-      router.push({ name: "/home" });
+      router.replace({ name: "/home" });
     default:
-      router.push("/home");
+      router.replace("/home");
     //sessionStore.clearRoomId();
   }
 };

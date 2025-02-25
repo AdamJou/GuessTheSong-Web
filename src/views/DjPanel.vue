@@ -163,7 +163,7 @@ const submitSelectedSong = async () => {
 
     await update(playerSongRef, { wasPlayed: true });
 
-    router.push({ name: "PlaySong", params: { roomId } });
+    router.replace({ name: "PlaySong", params: { roomId } });
   } catch (error) {
     console.error("Error submitting song to current round:", error);
     alert("Failed to submit the song. Please try again.");

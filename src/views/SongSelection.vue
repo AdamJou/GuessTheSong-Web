@@ -145,9 +145,9 @@ const handleGameStatusChange = (status: string | null) => {
           component: DjPanel,
         });
       }
-      router.push(`/dj-panel/${roomId}`);
+      router.replace(`/dj-panel/${roomId}`);
     } else {
-      router.push({ name: "Voting", params: { roomId } });
+      router.replace({ name: "Voting", params: { roomId } });
     }
   }
 };

@@ -32,6 +32,18 @@ const router = createRouter({
   routes,
 });
 
+// Funkcja do sprawdzenia, czy URL powinien być ukryty
+const shouldHideUrl = (path: string) => {
+  return !path.startsWith("/lobby") && path !== "/" && path !== "/home";
+};
+
+// Zmiana URL na "/play", jeśli nie jesteśmy na dozwolonych ścieżkach
+router.afterEach((to) => {
+  if (shouldHideUrl(to.path)) {
+    window.history.replaceState(null, "", "/play");
+  }
+});
+
 // 🔹 Blokowanie wstecz - pozostanie na bieżącej stronie
 const preventBack = () => {
   history.pushState(null, "", location.href);
