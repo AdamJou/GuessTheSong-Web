@@ -1,6 +1,5 @@
 <template>
   <div class="youtube-player">
-    <!-- Możesz dostosować rozmiar iframe wedle uznania -->
     <iframe
       width="560"
       height="315"
@@ -15,13 +14,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-// Odbieramy "songId" jako prop
 const props = defineProps<{
   songId: string;
 }>();
 
-// Generujemy URL do osadzenia YouTube
-// np. https://www.youtube.com/embed/<songId>?autoplay=1
 const iframeSrc = computed(() => {
   return `https://www.youtube.com/embed/${props.songId}?autoplay=1`;
 });

@@ -1,14 +1,13 @@
 import { defineStore } from "pinia";
 import { getDatabase, ref as dbRef, onValue, update } from "firebase/database";
 
-// Zdefiniowane typy dla statusu gry i rundy.
 type GameStatus =
   | "waiting"
   | "song_selection"
   | "voting"
   | "summary"
   | "finished";
-type RoundStatus = "voting" | "completed";
+type RoundStatus = "voting" | "completed" | "waiting";
 
 export const useSessionStore = defineStore("session", {
   state: () => ({
@@ -16,20 +15,17 @@ export const useSessionStore = defineStore("session", {
     nickname: sessionStorage.getItem("nickname") || null,
     roomId: sessionStorage.getItem("roomId") || null,
 
-    // Aktualny status gry (globalny), gra i runda.
     gameStatus: null as GameStatus | null,
     currentGame: null as string | null,
     currentRound: null as string | null,
     roundStatus: null as RoundStatus | null,
 
-    // Informacje o DJ-u i graczach
     djId: null as string | null,
     players: {} as Record<
       string,
       { name: string; score: number; ready: boolean }
     >,
 
-    // Funkcje do odpinania subskrypcji.
     _roomStatusUnsub: null as null | (() => void),
     _gameSubUnsub: null as null | (() => void),
     _roundSubUnsub: null as null | (() => void),
@@ -44,14 +40,14 @@ export const useSessionStore = defineStore("session", {
         this.roomId = sessionStorage.getItem("roomId");
         this.currentGame = sessionStorage.getItem("currentGame");
 
-        // Subskrybuj dane z Firebase, jeśli roomId jest dostępne
         if (this.roomId) {
           this.subscribeToRoomStatus();
           this.subscribeToCurrentGame();
+          this.subscribeToCurrentRound();
           this.subscribeToPlayers();
         }
 
-        resolve(); // Oznacz operację jako zakończoną
+        resolve();
       });
     },
     setPlayerId(id: string) {
@@ -68,7 +64,6 @@ export const useSessionStore = defineStore("session", {
       this.roomId = id;
       sessionStorage.setItem("roomId", id);
 
-      // Uruchamiamy subskrypcje.
       this.subscribeToRoomStatus();
       this.subscribeToCurrentGame();
       this.subscribeToPlayers();
@@ -78,7 +73,6 @@ export const useSessionStore = defineStore("session", {
       this.roomId = null;
       sessionStorage.removeItem("roomId");
 
-      // Odpinamy subskrypcje i czyścimy lokalny stan.
       this.unsubscribeRoomStatus();
       this.unsubscribeCurrentGame();
       this.unsubscribeCurrentRound();
@@ -91,7 +85,6 @@ export const useSessionStore = defineStore("session", {
       this.players = {};
     },
 
-    // Subskrypcja statusu pokoju.
     subscribeToRoomStatus() {
       if (!this.roomId) return;
       this.unsubscribeRoomStatus();
@@ -113,7 +106,6 @@ export const useSessionStore = defineStore("session", {
       }
     },
 
-    // Subskrypcja aktualnej gry w pokoju.
     subscribeToCurrentGame() {
       if (!this.roomId) return;
       this.unsubscribeCurrentGame();
@@ -124,7 +116,6 @@ export const useSessionStore = defineStore("session", {
       const callback = onValue(gameRef, (snapshot) => {
         this.currentGame = snapshot.exists() ? snapshot.val() : null;
 
-        // Jeśli mamy aktualną grę, nasłuchujemy aktualnej rundy.
         if (this.currentGame) {
           this.subscribeToCurrentRound();
         } else {
@@ -142,7 +133,6 @@ export const useSessionStore = defineStore("session", {
       }
     },
 
-    // Subskrypcja aktualnej rundy w grze.
     subscribeToCurrentRound() {
       if (!this.roomId || !this.currentGame) return;
       this.unsubscribeCurrentRound();
@@ -152,7 +142,6 @@ export const useSessionStore = defineStore("session", {
 
       const callback = onValue(roundRef, (snapshot) => {
         this.currentRound = snapshot.exists() ? snapshot.val() : null;
-        console.log("Updated currentRound:", this.currentRound); // Debugging log
       });
 
       this._roundSubUnsub = callback;
@@ -165,7 +154,6 @@ export const useSessionStore = defineStore("session", {
       }
     },
 
-    // Subskrypcja statusu aktualnej rundy.
     subscribeToRoundStatus() {
       if (!this.roomId || !this.currentGame || !this.currentRound) return;
 
@@ -189,23 +177,47 @@ export const useSessionStore = defineStore("session", {
       }
     },
 
-    // Subskrypcja graczy i DJ-a w pokoju.
     subscribeToPlayers() {
-      if (!this.roomId) return;
+      if (!this.roomId) {
+        return;
+      }
+
       this.unsubscribePlayers();
 
       const db = getDatabase();
-      const playersRef = dbRef(db, `rooms/${this.roomId}/players`);
-      const djRef = dbRef(db, `rooms/${this.roomId}/djId`);
+      const playersPath = `rooms/${this.roomId}/players`;
+      const djPath = `rooms/${this.roomId}/djId`;
 
-      const playersCallback = onValue(playersRef, (snapshot) => {
-        this.players = snapshot.exists() ? snapshot.val() : {};
-      });
+      const playersRef = dbRef(db, playersPath);
+      const djRef = dbRef(db, djPath);
 
-      const djCallback = onValue(djRef, (snapshot) => {
-        console.log("DJ snapshot", snapshot.val());
-        this.djId = snapshot.exists() ? snapshot.val() : null;
-      });
+      const playersCallback = onValue(
+        playersRef,
+        (snapshot) => {
+          if (snapshot.exists()) {
+            this.players = snapshot.val();
+          } else {
+            this.players = {};
+          }
+        },
+        (error) => {
+          console.error("[playersCallback]", error);
+        }
+      );
+
+      const djCallback = onValue(
+        djRef,
+        (snapshot) => {
+          if (snapshot.exists()) {
+            this.djId = snapshot.val();
+          } else {
+            this.djId = null;
+          }
+        },
+        (error) => {
+          console.error("[djCallback] BŁĄD onValue djRef:", error);
+        }
+      );
 
       this._playersSubUnsub = () => {
         playersCallback();
@@ -220,7 +232,6 @@ export const useSessionStore = defineStore("session", {
       }
     },
 
-    // Aktualizacja statusu gry.
     async setGameStatus(status: GameStatus) {
       if (!this.roomId) return;
       const db = getDatabase();
@@ -229,7 +240,6 @@ export const useSessionStore = defineStore("session", {
       await update(roomRef, { status });
     },
 
-    // Aktualizacja statusu rundy.
     async setRoundStatus(status: RoundStatus) {
       if (!this.roomId || !this.currentGame || !this.currentRound) return;
       const db = getDatabase();
@@ -241,7 +251,6 @@ export const useSessionStore = defineStore("session", {
       await update(roundRef, { status });
     },
 
-    // Wznowienie subskrypcji po odświeżeniu strony
     reconnect() {
       if (this.roomId) {
         this.subscribeToRoomStatus();
