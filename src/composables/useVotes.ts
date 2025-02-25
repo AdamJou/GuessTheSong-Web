@@ -27,15 +27,20 @@ export function useVotes() {
       `rooms/${roomId.value}/games/${currentGame.value}/rounds/${currentRound.value}/votes`
     );
 
-    unsubscribeVotes = onValue(votesRef, (snapshot) => {
-      const voteData = snapshot.val() || {};
-      votes.value = voteData;
+    unsubscribeFromVotes();
 
-      // Check if the current player has already voted
-      if (playerId.value && voteData[playerId.value]) {
+    unsubscribeVotes = onValue(votesRef, (snapshot) => {
+      const voteData = snapshot.val();
+
+      votes.value = voteData && typeof voteData === "object" ? voteData : {};
+
+      if (playerId.value && votes.value[playerId.value]) {
         hasVoted.value = true;
         votedPlayer.value =
-          players.value?.[voteData[playerId.value]]?.name || "Unknown";
+          players.value?.[votes.value[playerId.value]]?.name || "Unknown";
+      } else {
+        hasVoted.value = false;
+        votedPlayer.value = null;
       }
     });
   };
@@ -50,7 +55,6 @@ export function useVotes() {
   watch(
     [currentGame, currentRound],
     () => {
-      unsubscribeFromVotes();
       subscribeToVotes();
     },
     { immediate: true }
@@ -59,13 +63,18 @@ export function useVotes() {
   const resetVotes = () => {
     hasVoted.value = false;
     votedPlayer.value = null;
+    votes.value = {};
   };
+
+  const getPlayerName = (id: string): string =>
+    players.value?.[id]?.name || "Unknown";
 
   return {
     votes,
     hasVoted,
     votedPlayer,
-    getPlayerName: (id: string) => players.value?.[id]?.name || "Unknown",
+    getPlayerName,
     resetVotes,
+    unsubscribeFromVotes,
   };
 }

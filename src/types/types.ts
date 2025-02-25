@@ -1,52 +1,55 @@
 export interface Player {
-  id: string; // Unikalne ID gracza
-  name: string; // Nazwa gracza
-  score: number; // Wynik gracza
-  ready: boolean; // Status gotowości
+  id: string;
+  name: string;
+  score: number;
+  ready: boolean;
 }
 export type Players = Record<
   string,
   { name: string; score: number; ready: boolean }
 >;
+export type GameMode = "together" | "separate";
 
 export interface Song {
-  songId: string; // Unikalne ID utworu
-  songTitle: string; // Tytuł utworu
-  suggestedBy: string; // ID gracza, który zaproponował utwór
+  songId: string;
+  songTitle: string;
+  suggestedBy: string;
   wasPlayed: boolean;
 }
 export interface Song {
-  songId: string; // Unikalne ID utworu
-  songTitle: string; // Tytuł utworu
-  suggestedBy: string; // ID gracza, który zaproponował utwór
-  wasPlayed: boolean; // Czy utwór został już odtworzony
+  songId: string;
+  songTitle: string;
+  suggestedBy: string;
+  wasPlayed: boolean;
 }
 
-// Typy pochodne
-export type PlayerSong = Omit<Song, "suggestedBy">; // Bez "suggestedBy"
-export type RoundSong = Omit<Song, "wasPlayed">; // Bez "wasPlayed"
+export type PlayerSong = Omit<Song, "suggestedBy">;
+export type RoundSong = Omit<Song, "wasPlayed">;
+
 export interface Round {
-  id: string; // Unikalne ID rundy
-  song: Song; // Informacje o utworze
-  votes: Record<string, string>; // Głosy: klucz - gracz, wartość - głosowany gracz
-  status: "voting" | "completed"; // Status rundy
+  id: string;
+  song: Song;
+  votes: Record<string, string>;
+  status: "voting" | "completed" | "waiting";
 }
 
 export interface Game {
-  id: string; // Unikalne ID gry
-  djId: string; // DJ odpowiedzialny za grę
-  playerSongs: Record<string, string>; // Wybrane piosenki przez graczy (klucz - playerId, wartość - songId)
-  rounds: Record<string, Round>; // Rundy w ramach gry
+  id: string;
+  djId: string;
+  playerSongs: Record<string, string>;
+  rounds: Record<string, Round>;
 }
 
 export interface Room {
-  id: string; // ID pokoju
-  players: Record<string, Player>; // Lista graczy
-  currentGame: string; // ID obecnej gry
-  currentRound: string; // ID obecnej rundy
-  djId: string; // ID obecnego DJ-a
-  status: "waiting" | "song_selection" | "voting" | "summary" | "finished"; // Status gry
-  games: Record<string, Game>; // Gry w ramach pokoju
+  id: string;
+  players: Record<string, Player>;
+  currentGame: string;
+  currentRound: string;
+  djId: string;
+  status: "waiting" | "song_selection" | "voting" | "summary" | "finished";
+  games: Record<string, Game>;
+  justFinishedGame: string | undefined;
+  gameMode: GameMode;
 }
 
 export interface YouTubeVideo {
