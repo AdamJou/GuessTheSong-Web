@@ -18,6 +18,13 @@
             :icon="['fas', 'headphones']"
             class="ic-dj"
           />
+
+          <font-awesome-icon
+            v-if="isDj && id !== djId"
+            :icon="['fas', 'user-minus']"
+            class="ic-dj"
+            @click="kickPlayer(id)"
+          />
         </li>
       </ul>
       <button
@@ -50,6 +57,7 @@ import { useLoadingStore } from "@/stores/useLoadingStore";
 import Status from "@/views/Status.vue";
 import { useCloseRoom } from "@/composables/useCloseRoom";
 import { useRoomWatcher } from "@/composables/useCloseRoomWatcher";
+import { getDatabase, ref as dbRef, update, onValue } from "firebase/database";
 
 const router = useRouter();
 const sessionStore = useSessionStore();
@@ -60,6 +68,7 @@ const loadingStore = useLoadingStore();
 const { closeRoom } = useCloseRoom();
 const { watchRoomRemoved, unwatchRoomRemoved } = useRoomWatcher();
 
+const playerId = computed(() => sessionStore.playerId);
 const roomId = computed(() => sessionStore.roomId);
 const players = computed(() => sessionStore.players);
 const djId = computed(() => sessionStore.djId);
@@ -128,16 +137,70 @@ const deleteGame = () => {
   }
 };
 
+const kickPlayer = async (playerIdToKick: string) => {
+  if (!roomId.value) return;
+  if (!players.value[playerIdToKick]) return;
+
+  const playerName = players.value[playerIdToKick].name || "???";
+  const confirmKick = window.confirm(
+    `Na pewno chcesz wyrzucić gracza ${playerName}?`
+  );
+  if (!confirmKick) return;
+
+  try {
+    const db = getDatabase();
+    const updates: Record<string, any> = {};
+
+    updates[`rooms/${roomId.value}/players/${playerIdToKick}`] = null;
+
+    await update(dbRef(db), updates);
+  } catch (error) {
+    console.error("Błąd przy wyrzucaniu gracza:", error);
+  }
+};
+
+let kickedUnsubscribe: (() => void) | null = null;
+
+const subscribeToKicked = () => {
+  if (!roomId.value || !sessionStore.playerId) return;
+  const db = getDatabase();
+  const myRoomPlayerRef = dbRef(
+    db,
+    `rooms/${roomId.value}/players/${sessionStore.playerId}`
+  );
+
+  kickedUnsubscribe = onValue(myRoomPlayerRef, async (snapshot) => {
+    if (!snapshot.exists()) {
+      alert("Zostałeś wyrzucony z pokoju.");
+      try {
+        await update(dbRef(db), {
+          [`players/${sessionStore.playerId}/roomId`]: "",
+        });
+      } catch (error) {
+        console.error("Błąd przy aktualizacji roomId na pusty:", error);
+      }
+      sessionStorage.setItem("roomId", "");
+      sessionStore.roomId = "";
+      router.replace("/home");
+    }
+  });
+};
+
 onMounted(async () => {
   setTimeout(() => {
     isVisible.value = true;
   }, 1000);
   await ensurePlayerInRoom();
   watchRoomRemoved();
+  subscribeToKicked();
 });
 
 onUnmounted(() => {
   unwatchRoomRemoved();
+  if (kickedUnsubscribe) {
+    kickedUnsubscribe();
+    kickedUnsubscribe = null;
+  }
 });
 const handleGameStatusChange = (status: string | null) => {
   if (!status) return;
