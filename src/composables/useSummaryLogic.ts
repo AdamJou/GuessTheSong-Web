@@ -84,7 +84,7 @@ export function useSummaryLogic() {
 
   function handleGameStatusChange(newStatus: string | null) {
     if (newStatus === "song_selection") {
-      router.push({
+      router.replace({
         name: "SongSelection",
         params: { roomId: roomId.value },
       });
@@ -99,7 +99,7 @@ export function useSummaryLogic() {
       });
     }
     sessionStore.clearRoomId();
-    router.push("/");
+    router.replace("/");
   }
 
   function getPlayerNickname(pId: string): string {

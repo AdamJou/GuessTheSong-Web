@@ -43,9 +43,9 @@ const redirectAfterNickname = async () => {
   const redirectPath = sessionStorage.getItem("redirectAfterNickname");
   if (redirectPath) {
     sessionStorage.removeItem("redirectAfterNickname");
-    await router.push(redirectPath);
+    await router.replace(redirectPath);
   } else {
-    await router.push("/home");
+    await router.replace("/home");
   }
 };
 

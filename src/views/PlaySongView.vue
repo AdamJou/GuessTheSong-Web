@@ -129,7 +129,7 @@ const goBackToSongSelection = async () => {
           status: "finished",
           justFinishedGame: currentGame.value,
         });
-        router.push({ name: "Summary", params: { roomId: roomId.value } });
+        router.replace({ name: "Summary", params: { roomId: roomId.value } });
         return;
       }
 
@@ -217,7 +217,7 @@ const goBackToSongSelection = async () => {
         status: "summary",
       });
 
-      router.push({ name: "Summary", params: { roomId: roomId.value } });
+      router.replace({ name: "Summary", params: { roomId: roomId.value } });
       return;
     }
 
@@ -259,7 +259,7 @@ const goBackToSongSelection = async () => {
       currentRound: nextRoundId,
     });
 
-    router.push({ name: "DjPanel", params: { roomId: roomId.value } });
+    router.replace({ name: "DjPanel", params: { roomId: roomId.value } });
   } catch (error) {
     console.error(
       "Error updating round status and creating the next round:",

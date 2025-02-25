@@ -122,7 +122,7 @@ const resumeGame = async () => {
       redirectToCurrentGameState(sessionStore.gameStatus, roundStatus);
     }
   } else {
-    router.push("/");
+    router.replace("/");
     sessionStore.clearRoomId();
   }
 };
@@ -134,36 +134,42 @@ const redirectToCurrentGameState = async (
   if (!roomId.value) return;
   switch (gameStatus) {
     case "waiting":
-      router.push({ name: "Lobby", params: { roomId: roomId.value } });
+      router.replace({ name: "Lobby", params: { roomId: roomId.value } });
       break;
     case "song_selection":
-      router.push({ name: "SongSelection", params: { roomId: roomId.value } });
+      router.replace({
+        name: "SongSelection",
+        params: { roomId: roomId.value },
+      });
       break;
     case "voting":
       if (playerId.value !== djId.value) {
-        router.push({ name: "Voting", params: { roomId: roomId.value } });
+        router.replace({ name: "Voting", params: { roomId: roomId.value } });
       } else {
         if (
           roundStatus === "waiting" ||
           roundStatus === "completed" ||
           roundStatus === "song_selection"
         ) {
-          router.push({ name: "DjPanel", params: { roomId: roomId.value } });
+          router.replace({ name: "DjPanel", params: { roomId: roomId.value } });
         } else if (roundStatus === "voting") {
-          router.push({ name: "PlaySong", params: { roomId: roomId.value } });
+          router.replace({
+            name: "PlaySong",
+            params: { roomId: roomId.value },
+          });
         } else {
           console.log("roundStatus", roundStatus);
         }
       }
       break;
     case "summary":
-      router.push({ name: "Summary", params: { roomId: roomId.value } });
+      router.replace({ name: "Summary", params: { roomId: roomId.value } });
       break;
     case "finished":
       sessionStore.clearRoomId();
-      router.push({ name: "/home" });
+      router.replace({ name: "/home" });
     default:
-      router.push("/home");
+      router.replace("/home");
     //sessionStore.clearRoomId();
   }
 };
@@ -205,7 +211,7 @@ const confirmStartGame = async () => {
   try {
     const roomId = await createGame(gameMode.value);
     sessionStore.setRoomId(roomId);
-    router.push(`/lobby/${roomId}`);
+    router.replace(`/lobby/${roomId}`);
     showStartGameModal.value = false;
   } catch (error) {
     console.error("Error starting game:", error);
@@ -224,7 +230,7 @@ const handleJoinGame = async () => {
     }
     await joinGame(roomIdInput.value.trim());
     sessionStore.setRoomId(roomIdInput.value.trim());
-    router.push(`/lobby/${roomIdInput.value.trim()}`);
+    router.replace(`/lobby/${roomIdInput.value.trim()}`);
     showJoinGameModal.value = false;
   } catch (error) {
     console.error("Error joining game:", error);

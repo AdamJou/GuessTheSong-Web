@@ -97,7 +97,7 @@ const subscribeToRoomStatus = () => {
   roomStatusUnsubscribe = onValue(roomStatusRef, (snapshot) => {
     roomStatus.value = snapshot.val();
     if (roomStatus.value === "summary" || roomStatus.value === "finished") {
-      router.push({ name: "Summary", params: { roomId: roomId.value } });
+      router.replace({ name: "Summary", params: { roomId: roomId.value } });
     }
   });
 };
@@ -143,6 +143,8 @@ const selectPlayer = (id: string) => {
   selectedPlayer.value = id;
 };
 
+import { runTransaction } from "firebase/database";
+
 const submitVote = async () => {
   if (
     !roomId.value ||
@@ -155,12 +157,21 @@ const submitVote = async () => {
     return;
   }
 
-  const votesRef = dbRef(
+  const voteRef = dbRef(
     db,
-    `rooms/${roomId.value}/games/${currentGame.value}/rounds/${currentRound.value}/votes`
+    `rooms/${roomId.value}/games/${currentGame.value}/rounds/${currentRound.value}/votes/${playerId.value}`
   );
-  await update(votesRef, {
-    [playerId.value]: selectedPlayer.value,
+
+  await runTransaction(voteRef, (currentData) => {
+    if (currentData === null || currentData === "") {
+      return selectedPlayer.value;
+    }
+    // Jeśli głos już istnieje, transakcja zostanie przerwana
+    return; // zwracając undefined, abortujemy transakcję
+  }).then((result) => {
+    if (!result.committed) {
+      alert("Głos już został oddany i nie można go zmienić!");
+    }
   });
 };
 
