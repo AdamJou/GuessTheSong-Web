@@ -2,6 +2,7 @@
   <div class="home-view">
     <section v-if="!roomId">
       <h1>Czyja To Melodia?</h1>
+      <GamePresentation />
       <div class="buttons-container">
         <button @click="handleStartGame" class="btn-start">Utwórz grę</button>
         <button @click="showJoinGameModal = true" class="btn-join">
@@ -91,6 +92,7 @@ import { useSessionStore } from "@/stores/session";
 import { useErrorStore } from "@/stores/useErrorStore";
 import { useLoadingStore } from "@/stores/useLoadingStore";
 import { getDatabase, ref as dbRef, get } from "firebase/database";
+import GamePresentation from "@/components/GamePresentation.vue";
 
 const router = useRouter();
 const sessionStore = useSessionStore();
@@ -247,6 +249,7 @@ const handleJoinGame = async () => {
 <style scoped>
 h1 {
   color: white;
+  margin-bottom: 1rem !important;
 }
 section {
   display: flex;
@@ -259,8 +262,8 @@ section {
   backdrop-filter: blur(2.7px);
   -webkit-backdrop-filter: blur(2.7px);
   border: 1px solid rgb(82, 28, 231);
-  height: 40vh;
   padding: 2rem;
+  max-height: 80vh;
   margin: 1rem;
 }
 .home-view {
@@ -268,6 +271,7 @@ section {
   margin-top: 50px;
 }
 h1 {
+  margin: 0;
   font-size: clamp(36px, 2vw, 18px);
 }
 .buttons-container {
@@ -325,6 +329,8 @@ button {
   justify-content: center;
   align-items: center;
   padding: 1rem;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
   box-sizing: border-box;
 }
 
