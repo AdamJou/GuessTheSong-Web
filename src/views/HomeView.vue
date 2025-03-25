@@ -93,11 +93,14 @@ import { useLoadingStore } from "@/stores/useLoadingStore";
 import { getDatabase, ref as dbRef, get } from "firebase/database";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import GamePresentation from "@/components/GamePresentation.vue";
+import { useGameStateManager } from "@/composables/useGameStateManager";
 
 const router = useRouter();
 const sessionStore = useSessionStore();
 const errorStore = useErrorStore();
 const loadingStore = useLoadingStore();
+const { fetchRoundStatus, redirectToCurrentGameState } = useGameStateManager();
+
 const roomId = ref(sessionStorage.getItem("roomId") || "");
 
 const currentGame = computed(() => sessionStore.currentGame);
@@ -150,78 +153,6 @@ const handleAutoResume = async () => {
     console.error("Error auto-resuming game:", error);
     sessionStore.clearRoomId();
     router.replace({ name: "HomeView" });
-  }
-};
-
-const redirectToCurrentGameState = async (
-  gameStatus: string,
-  roundStatus: string | null
-) => {
-  if (!roomId.value) return;
-  switch (gameStatus) {
-    case "waiting":
-      router.replace({ name: "Lobby", params: { roomId: roomId.value } });
-      break;
-    case "song_selection":
-      router.replace({
-        name: "SongSelection",
-        params: { roomId: roomId.value },
-      });
-      break;
-    case "voting":
-      if (playerId.value !== djId.value) {
-        router.replace({ name: "Voting", params: { roomId: roomId.value } });
-      } else {
-        if (
-          roundStatus === "waiting" ||
-          roundStatus === "completed" ||
-          roundStatus === "song_selection"
-        ) {
-          router.replace({ name: "DjPanel", params: { roomId: roomId.value } });
-        } else if (roundStatus === "voting") {
-          router.replace({
-            name: "PlaySong",
-            params: { roomId: roomId.value },
-          });
-        } else {
-          console.log("roundStatus", roundStatus);
-        }
-      }
-      break;
-    case "summary":
-      router.replace({ name: "Summary", params: { roomId: roomId.value } });
-      break;
-    case "finished":
-      sessionStore.clearRoomId();
-      router.replace({ name: "HomeView" });
-      break;
-    default:
-      router.replace({ name: "HomeView" });
-  }
-};
-
-const fetchRoundStatus = async () => {
-  if (!roomId.value || !currentGame.value || !currentRound.value) {
-    console.warn("Brak danych do pobrania roundStatus.");
-    return null;
-  }
-
-  const db = getDatabase();
-  const roundStatusRef = dbRef(
-    db,
-    `rooms/${roomId.value}/games/${currentGame.value}/rounds/${currentRound.value}/status`
-  );
-
-  try {
-    const snapshot = await get(roundStatusRef);
-    if (snapshot.exists()) {
-      return snapshot.val();
-    } else {
-      return null;
-    }
-  } catch (error) {
-    console.error("[App] Błąd pobierania roundStatus:", error);
-    return null;
   }
 };
 
@@ -292,8 +223,8 @@ section {
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: calc(85vh - 2rem);
-  max-height: calc(90vh - 2rem);
+  min-height: calc(95vh);
+  max-height: calc(95vh);
   border-radius: 16px;
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
   background-color: rgba(81, 24, 204, 0.12);
@@ -482,11 +413,6 @@ input {
     width: 100%;
     padding: 0.75rem 1rem;
     font-size: 1rem;
-  }
-
-  .toggle-container {
-    flex-direction: column;
-    gap: 1rem;
   }
 
   .modal-content {
