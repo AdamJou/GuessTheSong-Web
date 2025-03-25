@@ -1,5 +1,11 @@
 import { defineStore } from "pinia";
-import { getDatabase, ref as dbRef, onValue, update } from "firebase/database";
+import {
+  getDatabase,
+  ref as dbRef,
+  onValue,
+  update,
+  get,
+} from "firebase/database";
 
 type GameStatus =
   | "waiting"
@@ -34,20 +40,28 @@ export const useSessionStore = defineStore("session", {
 
   actions: {
     initializeSession(): Promise<void> {
-      return new Promise((resolve) => {
-        this.playerId = sessionStorage.getItem("playerId");
-        this.nickname = sessionStorage.getItem("nickname");
-        this.roomId = sessionStorage.getItem("roomId");
-        this.currentGame = sessionStorage.getItem("currentGame");
+      return new Promise(async (resolve) => {
+        try {
+          // Load local storage data
+          this.playerId = sessionStorage.getItem("playerId");
+          this.nickname = sessionStorage.getItem("nickname");
+          this.roomId = sessionStorage.getItem("roomId");
+          this.currentGame = sessionStorage.getItem("currentGame");
 
-        if (this.roomId) {
-          this.subscribeToRoomStatus();
-          this.subscribeToCurrentGame();
-          this.subscribeToCurrentRound();
-          this.subscribeToPlayers();
+          // If we have a roomId, set up subscriptions
+          if (this.roomId) {
+            // Set up subscriptions in order of dependency
+            this.subscribeToRoomStatus();
+            this.subscribeToCurrentGame();
+            this.subscribeToPlayers();
+          }
+
+          resolve();
+        } catch (error) {
+          console.error("Error initializing session:", error);
+          this.clearRoomId();
+          resolve();
         }
-
-        resolve();
       });
     },
     setPlayerId(id: string) {
@@ -61,28 +75,41 @@ export const useSessionStore = defineStore("session", {
     },
 
     setRoomId(id: string) {
+      // Clear existing subscriptions first
+      this.clearRoomId();
+
+      // Set new roomId
       this.roomId = id;
       sessionStorage.setItem("roomId", id);
 
-      this.subscribeToRoomStatus();
-      this.subscribeToCurrentGame();
-      this.subscribeToPlayers();
+      // Set up subscriptions for the new room
+      if (id) {
+        // Set up subscriptions in order of dependency
+        this.subscribeToRoomStatus();
+        this.subscribeToCurrentGame();
+        this.subscribeToPlayers();
+      }
     },
 
     clearRoomId() {
-      this.roomId = null;
-      sessionStorage.removeItem("roomId");
-
+      // Clear all subscriptions first
       this.unsubscribeRoomStatus();
       this.unsubscribeCurrentGame();
       this.unsubscribeCurrentRound();
       this.unsubscribePlayers();
+
+      // Clear state
+      this.roomId = null;
       this.gameStatus = null;
       this.currentGame = null;
       this.currentRound = null;
       this.roundStatus = null;
       this.djId = null;
       this.players = {};
+
+      // Clear storage
+      sessionStorage.removeItem("roomId");
+      sessionStorage.removeItem("currentGame");
     },
 
     subscribeToRoomStatus() {
@@ -200,8 +227,12 @@ export const useSessionStore = defineStore("session", {
             this.players = {};
           }
         },
-        (error) => {
+        (error: any) => {
           console.error("[playersCallback]", error);
+          // If we get a permission error, clear the room state
+          if (error.code === "permission_denied") {
+            this.clearRoomId();
+          }
         }
       );
 
@@ -214,8 +245,12 @@ export const useSessionStore = defineStore("session", {
             this.djId = null;
           }
         },
-        (error) => {
-          console.error("[djCallback] BŁĄD onValue djRef:", error);
+        (error: any) => {
+          console.error("[djCallback] Error onValue djRef:", error);
+          // If we get a permission error, clear the room state
+          if (error.code === "permission_denied") {
+            this.clearRoomId();
+          }
         }
       );
 
