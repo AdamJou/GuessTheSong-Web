@@ -318,6 +318,7 @@ button {
   border-color: #ff6600;
   box-shadow: 0 0.375rem 0 #cc5200, 0 0.625rem 1.25rem rgba(0, 0, 0, 0.3);
   text-shadow: 2px 2px 0 #cc5200;
+  margin-bottom: 1.5rem;
 }
 
 .btn-submit:hover {

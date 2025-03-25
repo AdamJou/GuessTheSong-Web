@@ -52,12 +52,14 @@ onMounted(() => {
 
 <style scoped>
 .scoreboard-container {
-  max-width: 500px;
+  width: 100%;
+  max-width: 600px;
   margin: 0 auto;
   text-align: center;
   padding: 1rem;
   font-family: "Bungee", sans-serif;
   color: #fff;
+  box-sizing: border-box;
 }
 
 .scoreboard-container h2 {
@@ -71,7 +73,8 @@ onMounted(() => {
 }
 
 .table-wrapper {
-  overflow-x: auto;
+  width: 100%;
+  overflow-x: hidden;
   margin-bottom: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
@@ -80,7 +83,16 @@ onMounted(() => {
 .scoreboard-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 300px;
+  table-layout: fixed;
+}
+
+.scoreboard-table th,
+.scoreboard-table td {
+  padding: 0.75rem;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .scoreboard-table th {

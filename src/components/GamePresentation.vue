@@ -1,5 +1,5 @@
 <template>
-  <div class="game-presentation">
+  <div class="presentation-wrapper">
     <div
       class="slides-container"
       @touchstart="handleTouchStart"
@@ -7,28 +7,30 @@
     >
       <transition name="slide-fade" mode="out-in">
         <div
-          class="slide"
+          class="slide-container"
           :key="currentSlideIndex"
           :class="{ 'shrink-rules': currentSlideIndex === 1 }"
         >
           <h2 class="slide-title">{{ slides[currentSlideIndex].title }}</h2>
-          <p class="slide-description">
-            {{ slides[currentSlideIndex].description }}
-          </p>
-          <ul class="slide-list">
-            <li
-              v-for="(item, i) in slides[currentSlideIndex].items"
-              :key="i"
-              class="slide-item"
-            >
-              <font-awesome-icon
-                v-if="item.icon"
-                :icon="getIcon(item.icon)"
-                class="item-icon"
-              />
-              <span class="item-text">{{ item.text }}</span>
-            </li>
-          </ul>
+          <div class="slide">
+            <p class="slide-description">
+              {{ slides[currentSlideIndex].description }}
+            </p>
+            <ul class="slide-list">
+              <li
+                v-for="(item, i) in slides[currentSlideIndex].items"
+                :key="i"
+                class="slide-item"
+              >
+                <font-awesome-icon
+                  v-if="item.icon"
+                  :icon="getIcon(item.icon)"
+                  class="item-icon"
+                />
+                <span class="item-text">{{ item.text }}</span>
+              </li>
+            </ul>
+          </div>
         </div>
       </transition>
     </div>
@@ -187,178 +189,157 @@ const getIcon = (iconString: string): string[] => {
 </script>
 
 <style scoped>
-.game-presentation {
-  position: relative;
-  width: 100%;
-  max-width: 700px;
-  margin: 0 auto;
-  box-sizing: border-box;
-  height: 70vh;
-  overflow: hidden;
+.presentation-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   color: white;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: rgba(81, 24, 204, 0.12);
   border-radius: 16px;
   backdrop-filter: blur(2.7px);
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  font-size: 16px;
-  padding: 1rem 1rem 0;
 }
-@media (max-width: 767px) {
-  .game-presentation {
-    height: 85vh;
-    min-height: 450px;
-  }
-}
+
 .slides-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  box-sizing: border-box;
-}
-.slide {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 4rem;
-  box-sizing: border-box;
-  overflow-y: hidden;
+  flex: 1;
+  min-height: 0;
   padding: 1rem;
-  text-align: left;
+  position: relative;
+  display: flex;
+  flex-direction: column;
 }
+
+.slide-container {
+  display: flex;
+  padding: 0.5rem;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .slide-title {
-  font-size: 1.25rem;
+  font-size: clamp(1.25rem, 2vw + 0.5rem, 1.5rem);
   text-align: center;
   font-weight: 600;
-  margin: 0 0 0.5rem;
+  margin: 0;
+  flex-shrink: 0;
 }
+
+.slide {
+  flex: 1;
+  min-height: 0;
+  padding: 0.5rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+.slide::-webkit-scrollbar {
+  width: 5px;
+}
+
+.slide::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.slide::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
 .slide-description {
-  font-size: 1rem;
+  font-size: clamp(0.875rem, 1vw + 0.5rem, 1rem);
   color: #b9b9b9;
   text-align: center;
   line-height: 1.4;
-  margin: 0 0 0.75rem;
+  margin-bottom: 1rem;
 }
+
 .slide-list {
   list-style: none;
   margin: 0;
   padding: 0;
 }
+
 .slide-item {
   display: flex;
-  align-items: center;
-  font-size: 1rem;
-  margin: 0.25rem 0;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  font-size: clamp(0.875rem, 1vw + 0.5rem, 1rem);
+  line-height: 1.4;
 }
+
 .item-icon {
+  flex-shrink: 0;
   font-size: 1.1rem;
-  margin-right: 0.4rem;
-  color: #007bff;
+  margin-top: 0.2rem;
 }
-.shrink-rules .slide-title,
-.shrink-rules .slide-description {
-  font-size: 0.95rem;
+
+.item-text {
+  flex: 1;
 }
-.shrink-rules .slide-item {
-  font-size: 0.9rem;
-}
+
 .bottom-fixed {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  box-sizing: border-box;
-  z-index: 10;
-  padding: 0.3rem 0.5rem 0.2rem;
-  display: flex;
-  padding-top: 0.8rem;
-  flex-direction: column;
-  background: rgb(55 69 178 / 10%);
-  align-items: center;
-  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.05);
+  margin-top: auto;
+  padding: 0.75rem;
+  background: rgba(55, 69, 178, 0.1);
+  backdrop-filter: blur(5px);
+  border-radius: 0 0 16px 16px;
 }
+
 .nav-buttons {
   display: flex;
   justify-content: center;
-  gap: 0.5rem;
-  margin-bottom: 0.3rem;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
 }
+
 .nav-buttons button {
-  background: #007bff;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  font-size: 1.2rem;
   color: #fff;
+  background: #007bff;
   border: none;
   border-radius: 50%;
-  width: 1.8rem;
-  height: 1.8rem;
-  font-size: 0.9rem;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  transition: 0.2s ease;
 }
+
 .nav-buttons button:disabled {
-  background: #ccc;
+  background: rgba(204, 204, 204, 0.3);
   cursor: not-allowed;
 }
-.nav-buttons button:hover:not(:disabled) {
+
+.nav-buttons button:not(:disabled):hover {
   background: #0056b3;
   transform: scale(1.05);
 }
-.nav-buttons button:active {
-  transform: scale(0.95);
-}
+
 .indicators {
   display: flex;
-  gap: 0.3rem;
   justify-content: center;
-  align-items: center;
+  gap: 0.5rem;
 }
+
 .indicators span {
-  width: 6px;
-  height: 6px;
-  background: #ccc;
+  width: 8px;
+  height: 8px;
+  background: rgba(204, 204, 204, 0.3);
   border-radius: 50%;
-  transition: background 0.3s ease, transform 0.2s ease;
+  transition: 0.2s ease;
   cursor: pointer;
 }
+
 .indicators span.active {
   background: #007bff;
   transform: scale(1.3);
 }
-.slide-fade-enter-active,
-.slide-fade-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-.slide-fade-enter-from {
-  opacity: 0;
-  transform: translateX(20px);
-}
-.slide-fade-leave-to {
-  opacity: 0;
-  transform: translateX(-20px);
-}
-@media (max-width: 767px) {
-  .slide {
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    font-size: 0.9rem;
-  }
-  .slide-title {
-    font-size: 1.1rem;
-  }
-  .slide-description,
-  .slide-item {
-    font-size: 0.85rem;
-  }
-  .nav-buttons button {
-    width: 1.6rem;
-    height: 1.6rem;
-    font-size: 0.85rem;
-  }
-  .item-icon {
-    font-size: 0.9rem;
-  }
-}
+
+/* Icon colors */
 .slide-item:nth-of-type(4n + 1) .item-icon {
   color: #007bff;
 }
@@ -370,5 +351,41 @@ const getIcon = (iconString: string): string[] => {
 }
 .slide-item:nth-of-type(4n + 4) .item-icon {
   color: #ffc107;
+}
+
+@media (max-width: 767px) {
+  .slide-title {
+    padding: 0.75rem 0.75rem 0.5rem;
+  }
+
+  .slide {
+    padding: 0 0.75rem 0.75rem;
+  }
+
+  .nav-buttons button {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 1rem;
+  }
+
+  .indicators span {
+    width: 6px;
+    height: 6px;
+  }
+}
+
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: 0.3s ease;
+}
+
+.slide-fade-enter-from {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.slide-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-20px);
 }
 </style>

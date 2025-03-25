@@ -178,7 +178,7 @@ const submitSelectedSong = async () => {
   text-align: center;
   color: white;
   overflow-x: hidden;
-  height: 100%;
+  height: 100vh;
 }
 h2 {
   font-size: 16px;

@@ -4,7 +4,7 @@
       <p>Wyszukiwanie...</p>
     </div>
 
-    <div v-else-if="hasSubmitted">
+    <div v-else-if="hasSubmitted" style="color: gray">
       <h3>Wybrany utwór</h3>
       <p>{{ playerSongs[playerId].songTitle }}</p>
     </div>
@@ -178,9 +178,9 @@ async function submitSelectedSong() {
 <style scoped>
 .song-search {
   text-align: center;
-  max-width: 100vw;
-  padding: 1rem;
-  overflow-x: hidden;
+  width: 100%;
+  padding: 0 1rem;
+  box-sizing: border-box;
   margin-bottom: 3rem;
 }
 
@@ -188,41 +188,53 @@ async function submitSelectedSong() {
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-direction: column;
   gap: 10px;
+  width: 100%;
 }
 
 input {
   padding: 10px;
   font-size: 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
+
 button {
-  padding: 0.5rem 1.875rem; /* 14px 30px */
-  font-size: 1rem; /* 18px */
+  padding: 0.5rem 1.875rem;
+  font-size: 1rem;
+  width: 100%;
+  box-sizing: border-box;
   text-transform: uppercase;
-  border-radius: 0.9375rem; /* 15px */
+  border-radius: 0.9375rem;
   border: none;
   transition: all 0.3s ease-in-out;
   letter-spacing: 2px;
   position: relative;
   cursor: pointer;
 }
-.btn-search {
-  color: #fff;
-  height: 100%;
-  background: linear-gradient(145deg, #ffcc00, #ff9900);
-  border-color: #ff6600;
-  box-shadow: 0 0.375rem 0 #cc5200, 0 0.625rem 1.25rem rgba(0, 0, 0, 0.3);
-  text-shadow: 2px 2px 0 #cc5200;
-}
-.btn-search:hover {
-  background: linear-gradient(145deg, #ffdd33, #ffbb00);
-  box-shadow: 0 0.25rem 0 #cc5200, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
-}
 
 ul {
   list-style: none;
   padding: 0;
   margin: 20px 0;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .song-search {
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .search-bar,
+  input,
+  button,
+  ul,
+  .video-item {
+    max-width: 600px;
+  }
 }
 
 .video-item {
@@ -236,7 +248,35 @@ ul {
   border: 1px solid #ccc;
   margin-bottom: 10px;
   transition: background-color 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
 }
+
+.title {
+  flex: 1;
+  min-width: 0;
+}
+
+.title p {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-search {
+  color: #fff;
+  height: 100%;
+  background: linear-gradient(145deg, #ffcc00, #ff9900);
+  border-color: #ff6600;
+  box-shadow: 0 0.375rem 0 #cc5200, 0 0.625rem 1.25rem rgba(0, 0, 0, 0.3);
+  text-shadow: 2px 2px 0 #cc5200;
+}
+.btn-search:hover {
+  background: linear-gradient(145deg, #ffdd33, #ffbb00);
+  box-shadow: 0 0.25rem 0 #cc5200, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
+}
+
 .video-item p {
   margin: 0;
 }
