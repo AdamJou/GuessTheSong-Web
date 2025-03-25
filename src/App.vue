@@ -37,7 +37,12 @@ import {
   computed,
   onBeforeMount,
 } from "vue";
-import { getAuth, onAuthStateChanged, signInAnonymously } from "firebase/auth";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInAnonymously,
+  User,
+} from "firebase/auth";
 import { getDatabase, ref as dbRef, get } from "firebase/database";
 import { useSessionStore } from "@/stores/session";
 import { useLoadingStore } from "@/stores/useLoadingStore";
@@ -84,7 +89,7 @@ const initializeApp = async () => {
 
   try {
     // First ensure we have authentication
-    const user = await new Promise((resolve) => {
+    const user = await new Promise<User | null>((resolve) => {
       const unsubscribe = onAuthStateChanged(auth, (user) => {
         unsubscribe();
         resolve(user);
@@ -111,10 +116,12 @@ const initializeApp = async () => {
         const roundStatus = await fetchRoundStatus();
         if (roundStatus) {
           // We have valid game state, redirect to appropriate view
-          await redirectToCurrentGameState(
-            sessionStore.gameStatus,
-            roundStatus
-          );
+          if (sessionStore.gameStatus) {
+            await redirectToCurrentGameState(
+              sessionStore.gameStatus,
+              roundStatus
+            );
+          }
         } else {
           // If no valid game state found, clear roomId
           sessionStore.clearRoomId();
