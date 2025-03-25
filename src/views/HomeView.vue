@@ -204,13 +204,13 @@ const handleJoinGame = async () => {
 <style scoped>
 .home-view {
   padding: 1rem 0;
-  min-height: 100vh;
+  min-height: 100dvh;
   box-sizing: border-box;
 }
 
 section {
   text-align: center;
-  min-height: calc(100vh - 2rem);
+  min-height: calc(100dvh - 2rem);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -223,8 +223,8 @@ section {
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: calc(95vh);
-  max-height: calc(95vh);
+  min-height: calc(95dvh);
+  max-height: calc(95dvh);
   border-radius: 16px;
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
   background-color: rgba(81, 24, 204, 0.12);
