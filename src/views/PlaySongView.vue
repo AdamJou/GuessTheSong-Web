@@ -32,11 +32,13 @@ import { useScoreCalculator } from "@/composables/useScoreCalculator";
 import YouTubePlayer from "@/components/YouTubePlayer.vue";
 import VotingStatus from "@/components/VotingStatus.vue";
 import { useLoadingStore } from "@/stores/useLoadingStore";
+import { useGameProgression } from "@/composables/useGameProgression";
 const { calculateAndSaveScores } = useScoreCalculator();
 
 const sessionStore = useSessionStore();
 const loadingStore = useLoadingStore();
 const router = useRouter();
+const { handleNextRound, handleNextGame } = useGameProgression();
 
 const roomId = computed(() => sessionStore.roomId);
 const currentGame = computed(() => sessionStore.currentGame);
@@ -100,164 +102,30 @@ const goBackToSongSelection = async () => {
   await new Promise((r) => setTimeout(r, 2000));
 
   try {
-    const db = getDatabase();
-
-    const currentRoundPath = `rooms/${roomId.value}/games/${currentGame.value}/rounds/${currentRound.value}`;
-    const gamePath = `rooms/${roomId.value}/games/${currentGame.value}`;
-    const roomPath = `rooms/${roomId.value}`;
-
     const currentRoundNumber = parseInt(
       currentRound.value!.replace("round", "")
     );
     const playerCount = Object.values(players.value || {}).length;
 
+    // Check if we need to move to next game
     if (currentRoundNumber >= playerCount) {
-      await update(dbRef(db, currentRoundPath), {
-        status: "completed",
-      });
-      await update(dbRef(db, roomPath), {
-        currentRound: "round1",
-      });
-
-      await calculateAndSaveScores(roomId.value!, currentGame.value!);
-
-      const currentGameNumber = parseInt(
-        currentGame.value!.replace("game", "")
+      await handleNextGame(
+        roomId.value!,
+        currentGame.value!,
+        currentRound.value!,
+        players.value
       );
-      if (currentGameNumber >= playerCount) {
-        await update(dbRef(db, roomPath), {
-          status: "finished",
-          justFinishedGame: currentGame.value,
-        });
-        router.replace({ name: "Summary", params: { roomId: roomId.value } });
-        return;
-      }
-
-      const nextGameNumber = currentGameNumber + 1;
-      const nextGameId = `game${nextGameNumber}`;
-
-      await update(dbRef(db, roomPath), {
-        currentGame: nextGameId,
-        currentRound: "round1",
-        justFinishedGame: "game" + currentGameNumber,
-      });
-
-      const roomSnap = await get(dbRef(db, roomPath));
-      if (!roomSnap.exists()) {
-        throw new Error("Room data not found");
-      }
-      const roomVal = roomSnap.val() || {};
-      const allGames = roomVal.games || {};
-
-      const usedDjIds = new Set<string>();
-      Object.values(allGames).forEach((g: any) => {
-        if (g.djId) {
-          usedDjIds.add(g.djId);
-        }
-      });
-
-      const playersSnap = await get(dbRef(db, `${roomPath}/players`));
-      if (!playersSnap.exists()) {
-        throw new Error("No players found in this room");
-      }
-      const updatedPlayers = playersSnap.val() as Record<
-        string,
-        { id: string; score: number; name: string }
-      >;
-      const playersArray = Object.values(updatedPlayers);
-
-      const potentialNewDjs = playersArray.filter((p) => !usedDjIds.has(p.id));
-
-      potentialNewDjs.sort((a, b) => b.score - a.score);
-
-      let newDjId = "";
-      if (potentialNewDjs.length > 0) {
-        newDjId = potentialNewDjs[0].id;
-      } else {
-        console.warn(
-          "Wszyscy gracze byli już DJ‑ami – brak kandydata na DJ‑a."
-        );
-      }
-
-      await update(dbRef(db, roomPath), {
-        djId: newDjId,
-      });
-
-      const nonDjVotes = Object.keys(updatedPlayers).filter(
-        (pid) => pid !== newDjId
-      );
-      const votesObj = nonDjVotes.reduce((acc, pid) => {
-        acc[pid] = "";
-        return acc;
-      }, {} as Record<string, string>);
-
-      const newGameObj = {
-        id: nextGameId,
-        djId: newDjId,
-        currentRound: "round1",
-        rounds: {
-          round1: {
-            id: "round1",
-            song: {
-              songId: "",
-              songTitle: "",
-              suggestedBy: "",
-              wasPlayed: false,
-            },
-            votes: votesObj,
-            status: "song_selection",
-          },
-        },
-      };
-
-      await update(dbRef(db, `${roomPath}/games`), {
-        [nextGameId]: newGameObj,
-      });
-      await update(dbRef(db, roomPath), {
-        status: "summary",
-      });
-
-      router.replace({ name: "Summary", params: { roomId: roomId.value } });
       return;
     }
 
-    await update(dbRef(db, currentRoundPath), {
-      status: "completed",
-    });
-
-    const nextRoundNumber = currentRoundNumber + 1;
-    const nextRoundId = `round${nextRoundNumber}`;
-
-    const votes = Object.keys(players.value || {}).reduce((acc, playerId) => {
-      if (playerId !== sessionStore.djId) {
-        acc[playerId] = "";
-      }
-      return acc;
-    }, {} as Record<string, string>);
-
-    const newRound = {
-      id: nextRoundId,
-      song: {
-        songId: "",
-        songTitle: "",
-        suggestedBy: "",
-        wasPlayed: false,
-      },
-      votes: votes,
-      status: "song_selection",
-    };
-
-    await update(dbRef(db, gamePath), {
-      [`rounds/${nextRoundId}`]: newRound,
-    });
-
-    await update(dbRef(db, roomPath), {
-      currentRound: nextRoundId,
-    });
-
-    await update(dbRef(db, gamePath), {
-      currentRound: nextRoundId,
-    });
+    // Handle next round within the same game
+    await handleNextRound(
+      roomId.value!,
+      currentGame.value!,
+      currentRound.value!,
+      players.value,
+      djId.value!
+    );
 
     router.replace({ name: "DjPanel", params: { roomId: roomId.value } });
   } catch (error) {
