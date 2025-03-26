@@ -1,5 +1,5 @@
 <template>
-  <div class="nickname-input">
+  <div v-if="!sessionStore.nickname" class="nickname-input">
     <h1>Wprowadź swój nick</h1>
     <form @submit.prevent="saveNickname" novalidate>
       <input
@@ -23,7 +23,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { getAuth, signInAnonymously } from "firebase/auth";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
 import { getDatabase, ref as dbRef, set, get } from "firebase/database";
 import { useSessionStore } from "@/stores/session";
 import { useLoadingStore } from "@/stores/useLoadingStore";
@@ -94,22 +94,43 @@ const saveNickname = async () => {
   try {
     const auth = getAuth();
     let userId = sessionStore.playerId;
+
+    // Ensure we have authentication
     if (!userId) {
       const result = await signInAnonymously(auth);
       userId = result.user.uid;
       sessionStore.setPlayerId(userId);
-      console.log("Anonymous user created with ID:", userId);
     }
+
+    // Wait for auth state to be fully initialized
+    await new Promise((resolve) => {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        unsubscribe();
+        resolve(user);
+      });
+    });
+
     const db = getDatabase();
     const playerRef = dbRef(db, `players/${userId}`);
 
+    // First check if player already exists
+    const snapshot = await get(playerRef);
+    if (snapshot.exists()) {
+      const data = snapshot.val();
+      if (data.nickname && data.nickname.trim().length >= 3) {
+        sessionStore.setNickname(data.nickname);
+        await redirectAfterNickname();
+        return;
+      }
+    }
+
+    // If no valid nickname exists, save the new one
     await set(playerRef, {
       nickname: nickname.value.trim(),
       currentGame: "",
     });
 
     sessionStore.setNickname(nickname.value.trim());
-    sessionStore.setPlayerId(userId);
     await redirectAfterNickname();
   } catch (err) {
     console.error("Error saving nickname:", err);

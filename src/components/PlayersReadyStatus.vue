@@ -27,17 +27,22 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .players-ready-status {
-  max-width: 497px;
-  margin: 1rem 0;
-  padding: 1rem;
-  border-radius: 8px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  background: rgba(30, 31, 41, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   box-sizing: border-box;
 }
 
 .chips-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: 0.75rem;
   width: 100%;
   box-sizing: border-box;
 }
@@ -45,41 +50,79 @@ onBeforeUnmount(() => {
 .chip {
   display: flex;
   align-items: center;
-  background-color: #f0f0f0;
-  padding: 0.5rem 1rem;
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
   white-space: nowrap;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  box-sizing: border-box;
+  transition: all 0.2s ease-in-out;
+}
+
+.chip:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
 }
 
 .dot {
   display: inline-block;
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  margin-right: 0.5rem;
+  margin-right: 0.75rem;
 }
 
 .dot.ready {
-  background-color: #4caf50;
+  background-color: #00ff99;
+  box-shadow: 0 0 8px rgba(0, 255, 153, 0.4);
 }
 
 .dot.not-ready {
-  background-color: #f44336;
+  background-color: #ff5555;
+  box-shadow: 0 0 8px rgba(255, 85, 85, 0.4);
 }
 
 .player-name {
-  font-weight: 500;
-  font-size: 0.9rem;
+  color: #ffffff;
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 0.25rem;
 }
 
-@media (max-width: 600px) {
-  .chip {
-    padding: 0.4rem 0.8rem;
+@media (max-width: 480px) {
+  .players-ready-status {
+    padding: 1rem;
   }
+
+  .chips-container {
+    gap: 0.5rem;
+  }
+
+  .chip {
+    padding: 0.625rem 0.875rem;
+    border-radius: 8px;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    margin-right: 0.5rem;
+  }
+
   .player-name {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .chip {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .chip:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 }
 </style>

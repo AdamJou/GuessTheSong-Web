@@ -6,7 +6,9 @@
     <Scoreboard :lastGame="isLastGame" />
 
     <div v-if="isLastGame" class="last-game-nav">
-      <p>To była ostatnia gra. Możesz przejrzeć wyniki wszystkich gier</p>
+      <p style="color: white">
+        To była ostatnia gra. Możesz przejrzeć wyniki wszystkich gier
+      </p>
       <div class="game-buttons">
         <button
           v-for="gid in allGameIds"
@@ -41,7 +43,7 @@
     </div>
 
     <div v-if="isRoomFinished" class="finished-controls">
-      <p>Rozgrywka się zakończyła!</p>
+      <p style="color: white; text-align: center">Rozgrywka się zakończyła!</p>
       <button @click="goHome" class="btn-start">
         Powrót do strony głównej
       </button>
@@ -118,14 +120,56 @@ watch(
 
 <style scoped>
 .container {
-  max-width: 100vw;
+  max-width: 100%;
+  padding: 1rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  overflow-x: hidden;
 }
+
+.last-game-nav {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
+  padding: 0 1rem;
+  box-sizing: border-box;
+}
+
+.game-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.btn-game {
+  flex: 0 1 auto;
+  min-width: 80px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0.5rem;
+    gap: 1rem;
+  }
+
+  .btn-game {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+}
+
 .dj-controls {
   margin-top: 16px;
 }
-.last-game-nav {
-  margin-bottom: 1rem;
-}
+
 .game-buttons {
   display: flex;
   width: 100%;

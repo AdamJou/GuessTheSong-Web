@@ -217,7 +217,41 @@ watch(gameStatus, (newStatus) => {
 <style scoped>
 .lobby {
   color: white;
+  padding: 2rem 0;
+  min-height: 100vh;
+  box-sizing: border-box;
 }
+
+section {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  background: rgba(30, 31, 41, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+h1 {
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  margin: 0 0 1.5rem 0;
+  color: white;
+  text-align: center;
+}
+
+h3 {
+  font-size: clamp(1.2rem, 3vw, 1.5rem);
+  margin: 1.5rem 0 1rem;
+  color: #ffcc00;
+  text-align: center;
+  width: 100%;
+}
+
 strong {
   color: #ff9900;
   font-size: larger;
@@ -229,13 +263,21 @@ ul {
   max-height: 30vh;
   overflow-y: auto;
   padding: 0;
-  text-align: left;
+  width: 100%;
 }
+
 li {
   margin: 0.5rem 0;
-  font-size: clamp(1rem, 0.4vw + 0.4rem, 1.5rem);
-  border-bottom: 1px solid #ff9900;
+  font-size: clamp(0.875rem, 2vw, 1rem);
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
+
 .room-code-wrapper {
   display: flex;
   justify-content: center;
@@ -243,65 +285,75 @@ li {
   flex-direction: column;
   gap: 0.5rem;
   margin-bottom: 1rem;
-  border-radius: 16px;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.845);
-  backdrop-filter: blur(2.7px);
-  -webkit-backdrop-filter: blur(2.7px);
-  border: 1px solid rgba(82, 28, 231, 0.579);
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.375);
+  background: rgba(30, 31, 41, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1rem;
+  border-radius: 12px;
+  transition: all 0.2s ease-in-out;
 }
+
 .room-code {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .room-code p {
   margin: 0;
-  color: gray;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: clamp(0.875rem, 2vw, 1rem);
 }
 
 .room-code span {
-  font-size: 1.5rem;
+  font-size: clamp(1.2rem, 3vw, 1.5rem);
   color: #00ff99;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-weight: bold;
 }
 
 .ic-dj {
   color: #ff9900;
-  margin-left: 0.5rem;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
 }
+
+.ic-dj:hover {
+  transform: scale(1.1);
+  color: #ffbb33;
+}
+
 .copy-icon {
   cursor: pointer;
-  color: gray;
-  font-size: 20px;
-  transition: color 0.3s;
-  transition: 0.3s ease-in-out;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+  transition: all 0.2s ease-in-out;
 }
+
 .room-code-wrapper:hover {
   cursor: pointer;
+  background: rgba(30, 31, 41, 0.9);
 }
-.room-code-wrapper:hover > .room-code .copy-icon {
+
+.room-code-wrapper:hover .copy-icon {
   transform: scale(1.1);
   color: #ff9900;
 }
+
 button {
-  padding: 0.875rem 1.875rem; /* 14px 30px */
-  font-size: 1.125rem; /* 18px */
+  padding: 0.875rem 1.875rem;
+  font-size: clamp(0.9rem, 2vw, 1.125rem);
   text-transform: uppercase;
-  border-radius: 0.9375rem; /* 15px */
-  border: 0.25rem solid; /* 4px */
+  border-radius: 0.9375rem;
+  border: 0.25rem solid;
   transition: all 0.3s ease-in-out;
   letter-spacing: 2px;
   position: relative;
   cursor: pointer;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
+  white-space: nowrap;
 }
+
 .btn-start {
   color: #fff;
   background: linear-gradient(145deg, #ffcc00, #ff9900);
@@ -310,25 +362,55 @@ button {
   text-shadow: 2px 2px 0 #cc5200;
 }
 
-.btn-start:hover {
+.btn-start:hover:not(.disabled) {
   background: linear-gradient(145deg, #ffdd33, #ffbb00);
   box-shadow: 0 0.25rem 0 #cc5200, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
+  transform: translateY(-2px);
 }
+
 .disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 .btn-end {
-  color: #fff;
+  color: #ff5555;
   position: fixed;
   right: 2rem;
   bottom: 2rem;
   font-size: 2rem;
-  transition: color 0.3s ease;
+  transition: all 0.3s ease;
 }
+
 .btn-end:hover {
-  color: #bbb;
+  color: #ff3333;
   cursor: pointer;
+  transform: scale(1.1);
+}
+
+@media (max-width: 768px) {
+  .lobby {
+    padding: 1rem 0;
+  }
+
+  .room-code-wrapper {
+    padding: 0.75rem;
+  }
+
+  li {
+    padding: 0.625rem;
+    font-size: 0.875rem;
+  }
+
+  button {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+  }
+
+  .btn-end {
+    right: 1rem;
+    bottom: 1rem;
+    font-size: 1.5rem;
+  }
 }
 </style>

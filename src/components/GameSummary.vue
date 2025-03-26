@@ -47,8 +47,8 @@
                 v-for="(votedFor, voting) in currentRound.votes"
                 :key="voting"
               >
-                <span class="voter">{{ getPlayerNickname(voting) }} </span>
-                <span> głosował(a) na </span>
+                <span class="voter">{{ getPlayerNickname(voting) }}</span>
+                <span class="vote-label">→</span>
                 <span
                   :class="{
                     correct: votedFor === currentRound.song.suggestedBy,
@@ -102,51 +102,147 @@ function prevRound() {
 
 <style scoped>
 .game-summary {
-  max-width: 500px;
-  margin: 1rem 1rem; 
-  background-color: #1e1f29;
-  border: 1px solid #2a2b36;
-  border-radius: 8px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  background: rgba(30, 31, 41, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   color: #ffffff;
-  font-family: "Bungee", sans-serif;
-  padding: 1rem;
+  box-sizing: border-box;
 }
 
-
 .game-summary h2 {
-  font-size: clamp(1.5rem, 2.5vw, 2rem);
-  margin-bottom: 1.2rem;
-  color: #ffcc00; 
+  font-size: clamp(1.2rem, 3vw, 1.5rem);
+  margin: 0 0 1.5rem 0;
+  color: #ffcc00;
   text-align: center;
 }
 
+.game-summary h3 {
+  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  margin: 1rem 0;
+  color: #00ff99;
+  text-align: center;
+}
+
+.song-title {
+  font-size: clamp(0.875rem, 2vw, 1rem);
+  color: #fff;
+  opacity: 0.9;
+  display: block;
+  text-align: center;
+  margin: 0.5rem 0;
+}
+
+p {
+  text-align: center;
+  margin: 0.5rem 0;
+  font-size: clamp(0.875rem, 2vw, 1rem);
+}
+
+strong {
+  font-size: clamp(0.875rem, 2vw, 1rem);
+}
+
+.player-nickname {
+  color: #ffcc00;
+  font-size: clamp(0.875rem, 2vw, 1rem);
+}
+
+.votes {
+  margin-top: 1.5rem;
+}
+
+.votes h4 {
+  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  color: #ffcc00;
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.votes ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.votes li {
+  display: grid;
+  grid-template-columns: 1fr 50px 1fr;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 0.75rem;
+  gap: 0.5rem;
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
+  line-height: 1.4;
+}
+
+.voter {
+  text-align: right;
+  color: white;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 0.5rem;
+}
+
+.vote-label {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.correct,
+.wrong {
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 0.5rem;
+}
+
+.correct {
+  color: #00ff99;
+}
+
+.wrong {
+  color: #ff5555;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 1.5rem 0;
+}
+
+@media (max-width: 480px) {
+  .game-summary {
+    padding: 1rem;
+  }
+
+  .votes li {
+    padding: 0.625rem;
+    gap: 0.25rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+  }
+}
 
 .no-data,
 .no-rounds {
   text-align: center;
-  color: #ccc;
-  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: clamp(0.875rem, 2vw, 1rem);
+  margin: 1rem 0;
 }
-
-
-.game-summary h3 {
-  font-size: clamp(1.2rem, 2vw, 1.5rem);
-  margin-bottom: 0.8rem;
-  color: #00ff99; 
-  text-align: center;
-}
-
-
-.song-title,
-.player-nickname {
-  font-style: italic;
-}
-
-.player-nickname {
-  color: #00ff99; 
-  font-size: clamp(0.9rem, 1.5vw, 1.1rem);
-}
-
 
 .round-navigation {
   display: flex;
@@ -174,46 +270,6 @@ function prevRound() {
 .round-navigation button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-hr {
-  margin: 0.5rem 0;
-}
-
-.votes h4 {
-  font-size: clamp(1.2rem, 2vw, 1.8rem);
-  margin-top: 0.6rem;
-  margin-bottom: 0.6rem;
-  color: #ffcc00;
-}
-
-.votes ul {
-  list-style: none;
-  padding-left: 0;
-  height: 100%;
-  margin: 0;
-}
-
-.votes li {
-  margin-bottom: 1.5rem;
-  font-size: clamp(1rem, 1.5vw, 1.2rem);
-}
-
-
-.correct {
-  color: #00ff99;
-}
-
-.wrong {
-  color: #ff5555;
-}
-
-.voter {
-  color: #ffcc00;
-}
-
-strong {
-  color: gray;
 }
 
 .btn-prev,

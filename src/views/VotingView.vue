@@ -19,24 +19,28 @@
 
     <div v-if="currentSong && currentSong.songId && !hasVoted">
       <h3>Zagłosuj na gracza</h3>
-      <ul>
-        <li
-          v-for="(player, playerId) in otherPlayers"
-          :key="playerId"
-          @click="selectPlayer(playerId)"
-          :class="{ selected: selectedPlayer === playerId }"
+      <div class="players-container">
+        <ul>
+          <li
+            v-for="(player, playerId) in otherPlayers"
+            :key="playerId"
+            @click="selectPlayer(playerId)"
+            :class="{ selected: selectedPlayer === playerId }"
+          >
+            {{ player.name }}
+          </li>
+        </ul>
+      </div>
+      <div class="vote-button-container">
+        <button
+          @click="submitVote"
+          :disabled="!selectedPlayer"
+          :class="{ disabled: !selectedPlayer }"
+          class="btn-submit"
         >
-          {{ player.name }}
-        </li>
-      </ul>
-      <button
-        @click="submitVote"
-        :disabled="!selectedPlayer"
-        :class="{ disabled: !selectedPlayer }"
-        class="btn-submit"
-      >
-        Zagłosuj
-      </button>
+          Zagłosuj
+        </button>
+      </div>
     </div>
 
     <div v-if="hasVoted">
@@ -195,44 +199,155 @@ onBeforeUnmount(() => {
 .voting-view {
   text-align: center;
   color: white;
-  max-width: 100vw;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  align-items: center;
+  padding: 1rem;
 }
+
 h1 {
-  margin-bottom: 0;
+  margin: 0 0 1rem 0;
+  width: 100%;
 }
+
+h3 {
+  margin: 0.5rem 0;
+  color: #ffcc00;
+  width: 100%;
+}
+
+.song-container {
+  width: 100%;
+  max-width: 600px;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+
+.song-container p {
+  margin: 0;
+  width: 100%;
+}
+
+.players-container {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 0;
+  margin-bottom: 80px; /* Space for the button */
+}
+
 ul {
   list-style-type: none;
-  padding: 0 1rem;
+  padding: 0.5rem;
+  margin: 0;
+  overflow-y: auto;
+  max-height: calc(100vh - 300px);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 153, 0, 0.3) transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 li {
-  margin: 10px 0;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.05);
   cursor: pointer;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+li:hover {
+  background: rgba(255, 153, 0, 0.2);
+  border-color: rgba(255, 153, 0, 0.3);
+  transform: translateY(-1px);
 }
 
 li.selected {
-  background-color: #007bff;
+  background: rgba(255, 153, 0, 0.3);
+  border-color: #ff9900;
   color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(255, 153, 0, 0.2);
 }
 
-button {
-  padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
-  border: none;
-  background-color: #007bff;
-  color: white;
-  border-radius: 5px;
-  margin: 2rem 0;
-}
-.song-container {
+.vote-button-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   padding: 1rem;
+  background: rgba(13, 13, 58, 0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
 }
-button:disabled {
-  background-color: #ccc;
+
+@media (min-width: 768px) {
+  .vote-button-container {
+    padding: 1rem calc((100% - 600px) / 2);
+  }
+
+  .btn-submit {
+    max-width: 600px;
+    width: 100%;
+  }
+
+  .players-container {
+    padding: 0;
+  }
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 0.875rem 1.875rem;
+  font-size: 1.125rem;
+  color: #fff;
+  background: linear-gradient(145deg, #ffcc00, #ff9900);
+  border: none;
+  border-radius: 0.9375rem;
+  box-shadow: 0 0.375rem 0 #cc5200, 0 0.625rem 1.25rem rgba(0, 0, 0, 0.3);
+  text-shadow: 2px 2px 0 #cc5200;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.btn-submit:hover:not(.disabled) {
+  background: linear-gradient(145deg, #ffdd33, #ffbb00);
+  box-shadow: 0 0.25rem 0 #cc5200, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-submit:active:not(.disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 0.25rem 0 #cc5200, 0 0.25rem 0.5rem rgba(0, 0, 0, 0.3);
+}
+
+.disabled {
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
@@ -284,27 +399,12 @@ button:disabled {
 strong {
   color: #ff9900;
   font-size: larger;
+  display: block;
+  margin-top: 0.5rem;
 }
+
 .voted-on {
   color: #ffcc00;
   font-size: larger;
-}
-
-.btn-submit {
-  color: #fff;
-  background: linear-gradient(145deg, #ffcc00, #ff9900);
-  border-color: #ff6600;
-  box-shadow: 0 0.375rem 0 #cc5200, 0 0.625rem 1.25rem rgba(0, 0, 0, 0.3);
-  text-shadow: 2px 2px 0 #cc5200;
-}
-
-.btn-submit:hover {
-  background: linear-gradient(145deg, #ffdd33, #ffbb00);
-  box-shadow: 0 0.25rem 0 #cc5200, 0 0.375rem 0.9375rem rgba(0, 0, 0, 0.5);
-}
-
-.disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
 }
 </style>

@@ -50,74 +50,132 @@ const filteredPlayers = computed(() => {
 
 <style scoped>
 .voting-status {
-  text-align: center;
-  margin-top: 20px;
-  color: white;
-  font-family: "Bungee", sans-serif;
-  padding: 0 1rem;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  background: rgba(30, 31, 41, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 h2 {
-  font-size: 1.5rem;
-  margin-bottom: 15px;
+  font-size: clamp(1.2rem, 3vw, 1.5rem);
+  margin: 0;
+  text-align: center;
+  color: #ffcc00;
 }
 
 .votes-list {
   list-style: none;
   padding: 0;
   margin: 0;
-  width: 100%;
+  display: grid;
+  gap: 0.75rem;
 }
 
 .player-vote {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 50px 1fr;
   align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 1rem;
-  font-size: 1.2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 0.75rem;
+  gap: 0.5rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.player-vote:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.player-name,
+.voted-player {
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 0.5rem;
 }
 
 .player-name {
-  flex: 1;
-  text-align: left;
+  text-align: right;
   color: #00ff99;
 }
 
-.vote-label {
-  flex: 1;
-  text-align: center;
-  font-size: 0.9rem;
-  margin: 0;
-  line-height: 1;
-  color: #ddd;
-}
-
 .voted-player {
-  flex: 1;
-  text-align: right;
+  text-align: left;
   color: #ffcc00;
 }
 
+.vote-label {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
 .not-voted-icon {
-  text-align: right;
   color: #ff5555;
-  font-size: 1.4rem;
+  font-size: 1rem;
+  opacity: 0.8;
+  margin: 0 auto;
+}
+
+@media (max-width: 480px) {
+  .voting-status {
+    padding: 1rem;
+  }
+
+  .player-vote {
+    padding: 0.625rem;
+    gap: 0.25rem;
+    border-radius: 8px;
+  }
+
+  .player-name,
+  .voted-player {
+    font-size: 0.75rem;
+  }
+
+  .vote-label {
+    font-size: 1.25rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .player-vote {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .player-vote:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
 }
 
 .fade-enter-active,
-.fade-leave-active,
-.fade-move {
-  transition: all 0.5s ease-in-out;
+.fade-leave-active {
+  transition: all 0.3s ease;
 }
 
-.fade-enter-from {
-  opacity: 0;
-  transform: translateY(-20px);
-}
-
+.fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-  transform: translateY(20px);
+  transform: translateY(10px);
+}
+
+.fade-move {
+  transition: transform 0.3s ease;
 }
 </style>

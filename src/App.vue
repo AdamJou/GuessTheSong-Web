@@ -1,12 +1,18 @@
 <template>
   <div id="root">
-    <transition name="fade" mode="out-in">
-      <router-view v-if="initialized" :replace="true" />
-    </transition>
-    <div v-if="showReturnButton" class="return-container">
-      <p>Twoja gra została wstrzymana.</p>
-      <button @click="resumeGame">Powróć do gry w pokoju {{ roomId }}</button>
+    <div v-if="!isReady || !initialized" class="global-loader">
+      <p>Trwa ładowanie...</p>
+      <div class="nutka-spinner">
+        <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M503.32,5.94c-5.51-4.71-12.78-6.77-19.96-5.64L169.56,49.85c-12.04,1.90-20.91,12.28-20.91,24.47v256H99.10C44.46,330.32,0,371.07,0,421.16c0,50.09,44.46,90.84,99.10,90.84S198.19,471.25,198.19,421.16v-66.07V194.59l264.26-41.73v136.17h-49.55c-54.64,0-99.10,40.75-99.10,90.84s44.46,90.84,99.10,90.84S512,429.96,512,379.87v-66.07V123.87V24.77c0-7.24-3.17-14.12-8.68-18.83z"
+          />
+        </svg>
+      </div>
     </div>
+    <transition v-else name="fade" mode="out-in">
+      <router-view :replace="true" />
+    </transition>
     <div v-if="loadingStore.isLoading" class="global-loader">
       <p>Trwa ładowanie...</p>
       <div class="nutka-spinner">
@@ -31,11 +37,17 @@ import {
   computed,
   onBeforeMount,
 } from "vue";
-import { getAuth, onAuthStateChanged, signInAnonymously } from "firebase/auth";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInAnonymously,
+  User,
+} from "firebase/auth";
 import { getDatabase, ref as dbRef, get } from "firebase/database";
 import { useSessionStore } from "@/stores/session";
 import { useLoadingStore } from "@/stores/useLoadingStore";
 import { useRouter } from "vue-router";
+import { useGameStateManager } from "@/composables/useGameStateManager";
 
 import ErrorMessage from "@/components/ErrorMessage.vue";
 import SuccessMessage from "@/components/SuccessMessage.vue";
@@ -43,9 +55,10 @@ import SuccessMessage from "@/components/SuccessMessage.vue";
 const loadingStore = useLoadingStore();
 const sessionStore = useSessionStore();
 const router = useRouter();
+const { fetchRoundStatus, redirectToCurrentGameState } = useGameStateManager();
 
 const initialized = ref(false);
-const showReturnButton = ref(false);
+const isReady = ref(false);
 const roomId = ref(sessionStorage.getItem("roomId") || "");
 
 const currentGame = computed(() => sessionStore.currentGame);
@@ -54,99 +67,83 @@ const gameStatus = computed(() => sessionStore.gameStatus);
 const playerId = computed(() => sessionStorage.getItem("playerId"));
 const djId = computed(() => sessionStore.djId);
 
-const fetchRoundStatus = async () => {
-  if (!roomId.value || !currentGame.value || !currentRound.value) {
-    console.warn("Brak danych do pobrania roundStatus.");
-    return null;
+// Add computed property to control router-view visibility
+const shouldShowRouterView = computed(() => {
+  // Don't show router-view if we're on NicknameInput route and have a nickname
+  if (
+    router.currentRoute.value.name === "NicknameInput" &&
+    sessionStore.nickname
+  ) {
+    return false;
   }
-
-  const db = getDatabase();
-  const roundStatusRef = dbRef(
-    db,
-    `rooms/${roomId.value}/games/${currentGame.value}/rounds/${currentRound.value}/status`
-  );
-
-  try {
-    const snapshot = await get(roundStatusRef);
-    if (snapshot.exists()) {
-      return snapshot.val();
-    } else {
-      console.warn("[App] roundStatus nie istnieje w bazie.");
-      return null;
-    }
-  } catch (error) {
-    console.error("[App] Błąd pobierania roundStatus:", error);
-    return null;
-  }
-};
-
-const fetchDjId = async (roomId: string): Promise<string | null> => {
-  if (!roomId) {
-    console.warn("Brak roomId, nie można pobrać djId.");
-    return null;
-  }
-
-  const db = getDatabase();
-  const djRef = dbRef(db, `rooms/${roomId}/djId`);
-
-  try {
-    const snapshot = await get(djRef);
-    if (snapshot.exists()) {
-      return snapshot.val();
-    } else {
-      console.warn("[fetchDjId] djId nie istnieje w bazie.");
-      return null;
-    }
-  } catch (error) {
-    console.error("[fetchDjId] Błąd pobierania djId:", error);
-    return null;
-  }
-};
+  return true;
+});
 
 onBeforeMount(async () => {
   await initializeApp();
 });
 
-const resumeGame = async () => {
-  showReturnButton.value = false;
-  if (sessionStore.gameStatus === "waiting") {
-    redirectToCurrentGameState(sessionStore.gameStatus, null);
-  }
-
-  if (sessionStore.gameStatus) {
-    const roundStatus = await fetchRoundStatus();
-
-    if (roundStatus) {
-      redirectToCurrentGameState(sessionStore.gameStatus, roundStatus);
-    }
-  } else {
-    router.replace("/");
-    sessionStore.clearRoomId();
-  }
-};
-
 const initializeApp = async () => {
   const auth = getAuth();
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      sessionStore.setPlayerId(user.uid);
-    } else {
+  loadingStore.startLoading();
+
+  try {
+    // First ensure we have authentication
+    const user = await new Promise<User | null>((resolve) => {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        unsubscribe();
+        resolve(user);
+      });
+    });
+
+    if (!user) {
       const result = await signInAnonymously(auth);
       sessionStore.setPlayerId(result.user.uid);
+    } else {
+      sessionStore.setPlayerId(user.uid);
     }
+
+    // Now that we have authentication, initialize session
+    await sessionStore.initializeSession();
+
+    // Check if we have a nickname
+    if (!sessionStore.nickname) {
+      // If no nickname, redirect to NicknameInput
+      await router.replace({ name: "NicknameInput" });
+    } else {
+      // If we have a roomId and game state, try to resume
+      if (sessionStore.roomId && sessionStore.currentGame) {
+        const roundStatus = await fetchRoundStatus();
+        if (roundStatus) {
+          // We have valid game state, redirect to appropriate view
+          if (sessionStore.gameStatus) {
+            await redirectToCurrentGameState(
+              sessionStore.gameStatus,
+              roundStatus
+            );
+          }
+        } else {
+          // If no valid game state found, clear roomId
+          sessionStore.clearRoomId();
+          await router.replace("/home");
+        }
+      }
+    }
+
     initialized.value = true;
-  });
-  await sessionStore.initializeSession();
+    isReady.value = true;
+  } catch (error) {
+    console.error("Error during initialization:", error);
+    sessionStore.clearRoomId();
+    await router.replace("/home");
+    initialized.value = true;
+    isReady.value = true;
+  } finally {
+    loadingStore.stopLoading();
+  }
 };
 
-onMounted(async () => {
-  if (roomId.value) {
-    showReturnButton.value = true;
-    router.replace("/home");
-  } else {
-    await initializeApp();
-  }
-
+onMounted(() => {
   window.addEventListener("beforeunload", handleBeforeUnload);
 });
 
@@ -155,10 +152,6 @@ watch(
   async ([newCurrentGame, newCurrentRound, newGameStatus]) => {
     if (newGameStatus === "voting") {
       const fetchedRoundStatus = await fetchRoundStatus();
-      const djId = await fetchDjId(roomId.value);
-      if (djId) {
-        sessionStore.djId = djId;
-      }
       redirectToCurrentGameState(newGameStatus, fetchedRoundStatus);
     }
   },
@@ -173,59 +166,32 @@ const handleBeforeUnload = (event: BeforeUnloadEvent) => {
 onUnmounted(() => {
   window.removeEventListener("beforeunload", handleBeforeUnload);
 });
-
-const redirectToCurrentGameState = async (
-  gameStatus: string,
-  roundStatus: string | null
-) => {
-  if (!roomId.value) return;
-  switch (gameStatus) {
-    case "waiting":
-      router.replace({ name: "Lobby", params: { roomId: roomId.value } });
-      break;
-    case "song_selection":
-      router.replace({
-        name: "SongSelection",
-        params: { roomId: roomId.value },
-      });
-      break;
-    case "voting":
-      if (playerId.value !== djId.value) {
-        showReturnButton.value = false;
-        router.replace({ name: "Voting", params: { roomId: roomId.value } });
-      } else {
-        if (
-          roundStatus === "waiting" ||
-          roundStatus === "completed" ||
-          roundStatus === "song_selection"
-        ) {
-          showReturnButton.value = false;
-          router.replace({ name: "DjPanel", params: { roomId: roomId.value } });
-        } else if (roundStatus === "voting") {
-          showReturnButton.value = false;
-          router.replace({
-            name: "PlaySong",
-            params: { roomId: roomId.value },
-          });
-        } else {
-          console.log("roundStatus", roundStatus);
-        }
-      }
-      break;
-    case "summary":
-      router.replace({ name: "Summary", params: { roomId: roomId.value } });
-      break;
-    case "finished":
-      sessionStore.clearRoomId();
-      router.replace({ name: "/home" });
-    default:
-      router.replace("/home");
-    //sessionStore.clearRoomId();
-  }
-};
 </script>
 
 <style>
+#app {
+  width: 100%;
+  height: 100dvh;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+#root {
+  width: 100%;
+  min-height: 100%;
+  position: relative;
+  margin: 0 auto;
+  padding: 0 1rem;
+  box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  #root {
+    max-width: 600px;
+    padding: 0;
+  }
+}
+
 html,
 body {
   margin: 0;
@@ -235,9 +201,6 @@ body {
   height: 100%;
   overflow: hidden;
   font-family: "Bungee", sans-serif;
-  display: flex;
-  justify-content: center;
-  align-items: cetner;
   font-size: 14px;
   background-color: rgb(13, 13, 58);
   background-image: radial-gradient(
@@ -245,28 +208,13 @@ body {
     rgba(56, 38, 191, 0.059) 40%,
     rgba(13, 13, 58, 0.95) 100%
   );
-
   background-size: cover;
   background-repeat: no-repeat;
 }
 
-#app {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto 0 auto;
-  text-align: center;
-  color: #2c3e50;
-  display: flex;
-  justify-content: center;
-  align-items: cetner;
-  max-width: 100vw;
-  max-height: 100vh;
-  overflow-y: auto;
-}
-
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -274,19 +222,17 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #add8e6;
+  background-color: rgba(173, 216, 230, 0.3);
   border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #9ac0d4;
+  background-color: rgba(173, 216, 230, 0.5);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #add8e6 transparent;
+  scrollbar-color: rgba(173, 216, 230, 0.3) transparent;
   font-weight: normal;
 }
 
